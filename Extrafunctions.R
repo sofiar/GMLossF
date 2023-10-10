@@ -1,0 +1,159 @@
+################################################################################
+############################ Extra functions ###################################
+################################################################################
+
+library(Rfast)
+library(foreach)
+library(future.apply)
+library(doParallel)
+library(future.batchtools)
+library(MASS)
+library(Rcpp)
+library(RcppArmadillo)
+library(RcppEigen)
+
+sourceCpp("optimfunctions.cpp")
+#subfun2_bis_wrap(Ns = c(10, 20, 30), M = 5000, theta1 = 1.5, theta2 = 1, b = -0.8)
+#subfun2(Ns = c(10, 20, 30), M = 5000, theta1 = 1.5, theta2 = 1, b = -0.8)
+
+
+approx.CL1=function(Nobs,theta1,theta2,M)
+{
+nsims=dim(Nobs)[2]
+Times=dim(Nobs)[1]
+curll=0
+#N.sample=exp(rnorm(M,mean=theta1,sd=sqrt(theta2)))
+for (n in 1:nsims) {
+ for (t in 1:Times) {
+    N.sample=exp(Rnorm(M,m=theta1,s=sqrt(theta2)))
+    dp=dpois(Nobs[t,n],lambda = N.sample)
+    # to avoid -Inf values 
+    dp[dp==0]=0.0001
+    curll=curll+log(mean(dp))
+  #print(curll)
+
+    }
+}
+return(curll)
+}
+
+approx.CL2=function(Nobs,theta1,theta2,theta3,M)
+{
+nsims=dim(Nobs)[2]
+Times=dim(Nobs)[1]
+curll=0
+b=-2*(theta3)/(1+theta3)
+cov_matrix=theta2*matrix(c(1,1+b,1+b,1),nrow=2)
+mu=rep(theta1, 2)
+for (n in 1:nsims) {
+ for (t in 1:(Times-1)) {
+    N.sample <- exp(mvrnorm(M, mu = mu, Sigma = cov_matrix))
+    positive_rows <- apply(N.sample, 1, function(row) all(row > 0))
+    N.sample <- N.sample[positive_rows, , drop = FALSE]
+    dp1=dpois(Nobs[t,n], lambda = N.sample[,1])
+    dp2=dpois(Nobs[t+1,n], lambda = N.sample[,2])
+    #dp=cbind(dp1,dp2)
+    dp=dp1*dp2
+    dp[dp == 0] <- 0.0001
+    
+    curll <- curll + log(mean(dp))
+   
+  #print(curll)
+
+    }
+}
+return(curll)
+}
+
+subfun=function(Ns,M,theta1,theta2)
+{
+  aa=0
+  Times=length(Ns)
+  for (t in 1:Times) {
+  N.sample=exp(Rnorm(M,m=theta1,s=sqrt(theta2)))
+  dp=dpois(Ns[t],lambda = N.sample)
+  # to avoid -Inf values 
+  dp[dp==0]=0.0001
+  aa=aa+log(mean(dp))
+  }
+return(aa)
+}
+
+subfun2=function(Ns,M,theta1,theta2,b)
+{
+  aa=0
+  Times=length(Ns)
+  cov_matrix=theta2*matrix(c(1,1+b,1+b,1),nrow=2)
+  mu=rep(theta1, 2)
+  #foreach(t = 1:(Times-1)) %do% {
+  for (t in 1:(Times-1)) {
+    N.sample = exp(mvrnorm(M, mu = mu, Sigma = cov_matrix))
+    positive_rows <- apply(N.sample, 1, function(row) all(row > 0))
+    N.sample <- N.sample[positive_rows, , drop = FALSE]
+    dp1=dpois(Ns[t], lambda = N.sample[,1])
+    dp2=dpois(Ns[t+1], lambda = N.sample[,2])
+    #dp=cbind(dp1,dp2)
+    dp=dp1*dp2
+    dp[dp == 0] <- 0.0001
+    aa=aa+log(mean(dp))
+  }
+return(aa)
+}
+
+
+
+bis.approx.CL1=function(Nobs,theta1,theta2,M)
+{
+  nsims=dim(Nobs)[2]
+  Times=dim(Nobs)[1]
+  plan(multicore,workers=10)
+  #plan(multisession,workers = 100)
+  #plan(multisession,workers = 8)
+  a=future_apply(Nobs,2,subfun,M,theta1,theta2,future.seed = NULL)
+  curll=sum(a)
+  
+  return(curll)
+}
+
+
+
+bis.approx.CL2=function(Nobs,theta1,theta2,theta3,M)
+{
+  nsims=dim(Nobs)[2]
+  Times=dim(Nobs)[1]
+  plan(multicore,workers=128)
+  #plan(multisession,workers = 100)
+  #plan(multisession,workers = 10)
+  b=-2*(theta3)/(1+theta3)
+  a=future_apply(Nobs,2,subfun2,M,theta1,theta2,b,future.seed = NULL)
+  curll=sum(a)
+  
+  return(curll)
+}
+
+
+bis.approx.cpp.CL2=function(Nobs,theta1,theta2,b,M)
+{
+  nsims=dim(Nobs)[2]
+  Times=dim(Nobs)[1]
+  #plan(multicore,workers=10)
+  #plan(multisession,workers = 100)
+  #plan(multisession,workers = 10)
+  #b=-2*(theta3)/(1+theta3)
+  a=apply(Nobs,2,subfun2_bis_wrap,M,theta1,theta2,b)
+  curll=sum(a)
+  
+  return(curll)
+}
+to_abs=function(theta1t,theta2t,theta3t)
+{
+  expt1=exp(theta1t)
+  expt2=exp(theta2t)
+  expt3=exp(theta3t)
+
+  b=-2*(expt3)/(1+expt3)
+  a=-b*expt1
+  sigma2=-expt2*b*(2+b)
+  out=c(a=a,b=b,sigma2=sigma2)
+  return(out)
+}
