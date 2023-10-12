@@ -50,35 +50,48 @@ p_mcmc[[1]] + p_mcmc[[2]]+p_mcmc[[3]]+p_mcmc[[4]]+p_mcmc[[5]]+p_mcmc[[6]]+p_mcmc
   p_mcmc2[[15]]+p_mcmc2[[16]]+p_mcmc2[[17]]+p_mcmc2[[18]]+p_mcmc2[[19]]+p_mcmc2[[20]]
 
 
-
 ## density 
 p_density=list()
+p_density2=list()
 for (i in 1:nrep)
 {
   p_density[[i]]=ggplot()+geom_density(data=all_theta1 %>% filter(n_rep==i,n_iter>burn),aes(x=all_values),alpha=.8, show.legend = F)+
   theme_bw() + geom_vline(xintercept=thetas1t[i], linetype="dashed", color = "black")+xlab('theta1')+ylab('')
+
+  p_density2[[i]]=ggplot()+geom_density(data=all_theta2 %>% filter(n_rep==i,n_iter>burn),aes(x=all_values2),alpha=.8, show.legend = F)+
+  theme_bw() + geom_vline(xintercept=thetas2t[i], linetype="dashed", color = "black")+xlab('theta2')+ylab('')
 }
 
 p_density[[1]] + p_density[[2]]+p_density[[3]]+p_density[[4]]+p_density[[5]]+p_density[[6]]+
   p_density[[7]]+  p_density[[8]]+p_density[[9]]+p_density[[10]]+p_density[[11]]+p_density[[12]]
 
+p_density2[[1]] + p_density2[[2]]+p_density2[[3]]+p_density2[[4]]+p_density2[[5]]+p_density2[[6]]+
+  p_density2[[7]]+  p_density2[[8]]+p_density2[[9]]+p_density2[[10]]+p_density2[[11]]+p_density2[[12]]
 
 ## histogram 
 p_hist=list()
+p_hist2=list()
 for (i in 1:nrep)
 {
   p_hist[[i]]=ggplot()+geom_histogram(data=all_theta1 %>% filter(n_rep==i,n_iter>burn),aes(x=all_values),alpha=.8, show.legend = F)+
     theme_bw() + geom_vline(xintercept=thetas1t[i], linetype="dashed", color = "black")+xlab('theta1')+ylab('')
+
+  p_hist2[[i]]=ggplot()+geom_histogram(data=all_theta2 %>% filter(n_rep==i,n_iter>burn),aes(x=all_values2),alpha=.8, show.legend = F)+
+    theme_bw() + geom_vline(xintercept=thetas2t[i], linetype="dashed", color = "black")+xlab('theta2')+ylab('')
+
+
 }
 
 p_hist[[1]] +p_hist[[2]] +p_hist[[3]] +p_hist[[4]] +p_hist[[5]] +p_hist[[6]] +
   p_hist[[7]] +p_hist[[8]] +p_hist[[9]] +p_hist[[10]] +p_hist[[11]] +p_hist[[12]] 
 
+p_hist2[[1]] +p_hist2[[2]] +p_hist2[[3]] +p_hist2[[4]] +p_hist2[[5]] +p_hist2[[6]] +
+  p_hist2[[7]] +p_hist2[[8]] +p_hist2[[9]] +p_hist2[[10]] +p_hist2[[11]] +p_hist2[[12]] 
 
 # coverage
 mean(covers1[1:ii])
 mean(covers2[1:ii])
-
+covers2[1:ii]
 
 a_s=c()
 b_s=c()
@@ -118,6 +131,7 @@ for(n in 1:ii)
 }
 
 boxplot(mse1)
+boxplot(mse2)
 boxplot(mse1,mse2)
 
 
