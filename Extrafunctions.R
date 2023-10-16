@@ -157,3 +157,30 @@ to_abs=function(theta1t,theta2t,theta3t)
   out=c(a=a,b=b,sigma2=sigma2)
   return(out)
 }
+
+get.l=function(theta1t,theta2t,theta3t,Nobs,Nt) 
+{
+abs=to_abs(theta1t,theta2t,theta3t)
+nreps=dim(Nobs)[2]
+TT=dim(Nobs)[1]
+out=0
+for(j in 1:nreps)
+{
+N1obs=Nobs[,j]
+N1t=Nt[,j]
+
+z_hat=numeric(TT)
+vars=numeric(TT)
+z_hat[1]=theta2*N1obs[1]+theta1-lambertW0(theta2*exp(theta2*N1obs[1]+theta1))
+vars[1]=theta2/(1+theta2*exp(-z_hat[1]))
+
+for(n in 2:TT)
+{
+ z_hat[n]=abs[['sigma2']]*N1obs[n]+abs[['a']]+(1+abs[['b']])*z_hat[n-1]-lambertW0(theta2*exp(theta2*N1obs[n]+(abs[['a']]+(a+abs[['b']]*z_hat[n-1]))))
+ vars[n]=abs[['sigma2']]/(1+abs[['sigma2']]*exp(-z_hat[n]))
+}
+out=out+sum(dnorm(N1t,mean=z_hat,sd=sqrt(vars),log=TRUE))
+
+}
+return(out)
+}
