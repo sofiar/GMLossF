@@ -86,21 +86,3 @@ dkolmo = function(x, log = FALSE){
   }
   
 }
-
-
-
-
-
-############### appendix
-
-if(FALSE){ # appendix script is not run
-  
-  #...
-  
-  
-  ###############
-  
-  
-  #...  
-  
-}
