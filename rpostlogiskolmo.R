@@ -40,61 +40,7 @@
 # firstMaj and secondMaj will be inconsistent.
 
 
-
-
-########## add and check I level required packages
-
-### vector of I level required packages
-rpostlogiskolmo_pkg = c(
-  #""
-)
-
-### check I level required packages if they exist
-if( !is.null(rpostlogiskolmo_pkg) ){
-  # do for all packages in the vector
-  for(irpostlogiskolmo_pkg in rpostlogiskolmo_pkg){
-    # verify if the package has already been checked
-    if( !(irpostlogiskolmo_pkg %in% .myINFO$packages) ){
-      # add
-      .myINFO$packages = c(.myINFO$packages, irpostlogiskolmo_pkg)
-      # check
-      .myINFO$checkPKG(irpostlogiskolmo_pkg)
-    }
-  }
-}
-
-### remove vector of packages
-suppressWarnings(rm( list = c("rpostlogiskolmo_pkg","irpostlogiskolmo_pkg") ))
-
-
-
-
-########## load I level parent functions
-
-### vector of I level parent functions
-rpostlogiskolmo_fun = c(
-  "dkolmo"
-)
-
-### load I level parent functions if they exist
-if( !is.null(rpostlogiskolmo_fun) ){
-  # do for all functions in the vector
-  for(irpostlogiskolmo_fun in rpostlogiskolmo_fun){
-    # verify if the function has already been loaded
-    if( !(irpostlogiskolmo_fun %in% .myINFO$functions) ){
-      # add
-      .myINFO$functions = c(.myINFO$functions, irpostlogiskolmo_fun)
-      # check
-      .myINFO$loadFUN(irpostlogiskolmo_fun)
-    }
-  }
-}
-
-### remove vector of functions
-suppressWarnings(rm( list = c("rpostlogiskolmo_fun", "irpostlogiskolmo_fun") ))
-
-
-
+source("dkolmo.R")
 
 
 ############### function
@@ -337,33 +283,5 @@ rpostlogiskolmo = function(n, x){
     }
     
   }
-  
-}
-
-
-
-
-
-############### appendix
-
-if(FALSE){ # appendix script is not run
-  
-  ############### test
-  source("rkolmo.R")
-  set.seed(1994)
-  v = rkolmo(1e+4)
-  x = sqrt(4*v^2) * rnorm( length(v) )
-  res = matrix(nrow = length(v), ncol = 19)
-  for( i in 1:length(v) ){
-    sampl = rpostlogiskolmo(1e+5, x[i])
-    quant = quantile(sampl, probs = c(1:19)*0.05)
-    res[i,] = 4*v[i]^2 <= quant
-  }
-  colMeans(res)
-  
-  
-  ###############
-  
-  #...  
   
 }
