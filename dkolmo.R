@@ -11,62 +11,6 @@
 # series is truncated up to first 15 terms.
 
 
-
-########## add and check I level required packages
-
-### vector of I level required packages
-functionName_pkg = c(
-  #""
-)
-
-### check I level required packages if they exist
-if( !is.null(functionName_pkg) ){
-  # do for all packages in the vector
-  for(ifunctionName_pkg in functionName_pkg){
-    # verify if the package has already been checked
-    if( !(ifunctionName_pkg %in% .myINFO$packages) ){
-      # add
-      .myINFO$packages = c(.myINFO$packages, ifunctionName_pkg)
-      # check
-      .myINFO$checkPKG(ifunctionName_pkg)
-    }
-  }
-}
-
-### remove vector of packages
-suppressWarnings(rm( list = c("functionName_pkg","ifunctionName_pkg") ))
-
-
-
-
-########## load I level parent functions
-
-### vector of I level parent functions
-functionName_fun = c(
-  #""
-)
-
-### load I level parent functions if they exist
-if( !is.null(functionName_fun) ){
-  # do for all functions in the vector
-  for(ifunctionName_fun in functionName_fun){
-    # verify if the function has already been loaded
-    if( !(ifunctionName_fun %in% .myINFO$functions) ){
-      # add
-      .myINFO$functions = c(.myINFO$functions, ifunctionName_fun)
-      # check
-      .myINFO$loadFUN(ifunctionName_fun)
-    }
-  }
-}
-
-### remove vector of functions
-suppressWarnings(rm( list = c("functionName_fun", "ifunctionName_fun") ))
-
-
-
-
-
 ############### function
 dkolmo = function(x, log = FALSE){
   
