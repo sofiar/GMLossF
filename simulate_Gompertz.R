@@ -23,16 +23,16 @@ library(ggplot2)
 # a=-theta1*b
 # sigma2=theta2*(-b*(2+b))
 
-expt1=exp(theta1t)
-expt2=exp(theta2t)
-expt3=exp(theta3t)
+#expt1=exp(theta1t)
+#expt2=exp(theta2t)
+#expt3=exp(theta3t)
 
-b=-2*(expt3)/(1+expt3)
-a=-b*expt1
-sigma2=-expt2*b*(2+b)
+#b=-2*(expt3)/(1+expt3)
+#a=-b*expt1
+#sigma2=-expt2*b*(2+b)
 
 TT=500
-nsims=4
+nsims=1
 
 Nt=matrix(NA,nrow=TT,ncol=nsims)
 Nt[1,]=rep(10,nsims)
