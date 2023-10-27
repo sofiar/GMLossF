@@ -1,100 +1,95 @@
 #### MCMC
 source('Extrafunctions.R')
-source('GompUnkGP_likelihood.R')
+#source('GompUnkGP_likelihood.R')
+source('dkolmo.R')
+source('rpostlogiskolmo.R')
 
 ###############################################################################################
 ## This function computes the alg considering the likelihood computed via important sampling.##
-## parameters: theta1,theta2,b                                                               ##
+## parameters: theta1,theta2,b (To be rewritten)                                             ##
 ###############################################################################################
 
-mcmc.new=function(iters=3500, burn=1000, n.chains=2, theta1.init, theta2.init,
-beta.init,
- # Observations
- Nt.obs,
- # prior parameters
- phi.1, phi.2, eta.1, eta.2)
-
+mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2.init,
+                  b.init,
+                  # Observations
+                  Nt.obs,
+                  # prior parameters
+                  phi.1, phi.2, eta.1, eta.2)
+  
 {
- keep.theta1=array(0, dim = c(iters,n.chains))
- keep.theta2=array(0, dim = c(iters,n.chains))
- keep.b=array(0, dim = c(iters,n.chains)) 
-
- start=proc.time()[3]
- cat(" MCMC go!.\n")
-   for (c in 1:n.chains)
+  keep.theta1 = array(0, dim = c(iters,n.chains))
+  keep.theta2 = array(0, dim = c(iters,n.chains))
+  keep.b = array(0, dim = c(iters,n.chains)) 
+  
+  start=proc.time()[3]
+  cat(as.character(Sys.time())," MCMC go!.\n")
+  
+  V = pi^2 / 3 # initialize V equal to its prior mean
+  TT = length(Nt.obs)
+  shape.t2 = phi.1 + TT/2
+  eta.2TT =  eta.2*matrix(1, nrow = TT, ncol = TT)
+  eta.2T = rep(eta.2, TT)
+  
+  for (c in 1:n.chains)
   {
     # initialize parameter values
-    Zt=Nt.obs
-    TT=length(Nt.obs)
-    Theta1=theta1.init[c]
-    Theta2=theta2.init[c]
-    Beta=beta.init[c]
-    b=1/(1+exp(Beta))
-    B= (1+b)^(abs(outer(1:TT, 1:TT, "-"))) # get B matrix
-   
-   for (i in 1:iters)
-   {
-    #########################################################
-    ### 1. Sample beta through elliptical slice sampling ####
-    #########################################################
+    Zt = log(Nt.obs)
+    #Theta1 = theta1.init[c]
+    #Theta2 = theta2.init[c]
+    b = b.init[c]
+    B = (1+b)^(abs(outer(1:TT, 1:TT, "-"))) # get B matrix
+    beta = log( -b / (1+b) )
     
-    # update b and B!
+    for (i in 1:iters)
+    {
+      #########################################################
+      ### 1. Sample beta through elliptical slice sampling ####
+      #########################################################
+      
+      # update b, B and beta!
+      
+      #########################################################  
+      ###         2. Sample theta2 (Inverse Gamma)         ####  
+      #########################################################
+      
+      ES1 = chol(eta.2TT+B)
+      ES1 = backsolve(ES1, diag(1, nrow = TT)) 
+      rate.t2 = rate.theta2 +1/2 * tcrossprod( t(Zt-eta.1T)%*%ES1 ) #t(Zt-eta.1)%*%inv.m%*%(Zt-eta.1)
+      Theta2 = 1/rgamma(1, shape.t2, rate.t2)
+      keep.theta2[i,c] = Theta2
+      
+      #########################################################
+      ###           3. Sample theta1 (Gaussian)             ###
+      #########################################################
+      
+      inv.B = chol2inv(chol(B))
+      pp = eta.2T%*%inv.B
+      mean.t1 = pp%*%Zt+eta.1
+      var.t1 = Theta2*eta.2
+      pp = pp%*%rep(1,TT) + 1
+      mean.t1 = mean.t1/pp
+      var.t1 = var.t1/pp
+      Theta1 = rnorm(1, mean.t1, sd=sqrt(var.t1))
+      keep.theta1[i,c] = Theta1
+      
+      #########################################################
+      ###  4. Sample V through acceptance-rejection method  ###
+      #########################################################
+      
+      V = rpostlogiskolmo(n = 1, x = beta)
+      
+      #########################################################
+      ###     5. Sample Z=log(Nt) Acceptance-Rejection Al   ###
+      #########################################################
+      
+      
+    }
     
-    #########################################################  
-    ###         2. Sample theta2 (Inverse Gamma)         ####  
-    #########################################################
-    shape.t2 = shape.theta2 + TT/2
-    #inv.m= solve(eta.2*diag(TT)+B) 
-    ES1 = eigen(eta.2*diag(TT)+B)
-    S1_G = ES1$vectors
-    S1_D = ES1$values
-    inv.m = S1_G%*%diag(1/S1_D)%*%t(S1_G) 
-    rate.t2 = rate.theta2 +1/2 * t(Zt-eta.1)%*%inv.m%*%(Zt-eta.1)
-    Theta2=1/rgamma(1, shape.t2, rate.t2)
-    keep.theta2[i,c]=Theta2
-
-    #########################################################
-    ###           3. Sample theta1 (Gaussian)             ###
-    #########################################################
     
-    ES = eigen(B)
-    S1_E = ES$vectors
-    S1_V = ES$values
-    inv.B = S1_E%*%diag(1/S1_V)%*%t(S1_E) 
-    OnesV=rep(1,TT)
-    pp= eta.2*t(OnesV)%*%inv.B
-    mean=(pp%*%Zt+eta.1)/(pp%*%OnesV+1)
-    var=Theta2*eta.2/(eta.2*t(OnesV)%*%inv.B%*%OnesV)
-    Theta1=rnorm(1, mean, sd=sqrt(var))
-    keep.theta1[i,c]=Theta1
-
-    #########################################################
-    ###        4.Sample V acceptance-rejection method     ###
-    #########################################################
-
-    #curll=GompUnkGP_likelihood(Theta1, Theta2, b, Nt.obs, nsim, log =TRUE)  
-    
-    #########################################################
-    ###     5. Sample Z=log(Nt) Acceptance-Rejection Al   ###
-    #########################################################
-
-
-
-
-
-     
-   
-   
-   }
-  
-  
   }
-
-
-
-
-
+   
 }
+
 
 mcmc.al1=function(iters=3500, burn=1000, n.chains=2, theta1t.init=1, theta2t.init=theta2,theta3t.init=theta3,
                   M=3500,
