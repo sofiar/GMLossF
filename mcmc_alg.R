@@ -26,6 +26,7 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
   V = pi^2 / 3 # initialize V equal to its prior mean
   TT = length(Nt.obs)
   shape.t2 = phi.1 + TT/2
+  eta.1T=rep(eta.1,TT)
   eta.2TT =  eta.2*matrix(1, nrow = TT, ncol = TT)
   eta.2T = rep(eta.2, TT)
   d1 = -(2*phi.1+TT)/2
@@ -53,13 +54,17 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       loglike_Z = loglike_Z + d1*log( 1+d2*QF )
       
       # update b, B and beta!
+      #y0 = loglike_Z
+      #uu = runif(n=1,min=0,max=1)
       y = loglike_Z - log(runif(n=1,min=0,max=1))
       delta = runif(n=1,min=0,max=2*pi)
       delta_min = delta-2*pi
       delta_max = delta
       betaStar = rnorm(1,0,sqrt(V))
+     #cc = 0
       while(TRUE)
       {
+       #cc = cc + 1
         betaProp = beta*cos(delta) + betaStar*sin(delta)
         b = -1/(1+exp(-betaProp))
         B = (1+b)^(abs(outer(1:TT, 1:TT, "-"))) # get B matrix
@@ -68,7 +73,8 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
         ES1 = backsolve( ES1, diag(1, nrow = TT) )
         QF = tcrossprod( t(Zt-eta.1T)%*%ES1 )
         loglike_Z = loglike_Z + d1*log( 1+d2*QF )
-        if(loglike_Z > y)
+        #print(paste(betaProp, b, loglike_Z, sep = '  '))
+        if(any(loglike_Z > y, delta_max - delta_min < sqrt(.Machine$double.eps)))
         {
           beta = betaProp
           keep.b[i,c] = b
@@ -79,6 +85,7 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
           if(delta<=0){delta_min=delta}else{delta_max=delta}
           delta = runif(n=1,min=delta_min,max=delta_max)
         }
+        #print(paste(cc, abs(delta_min-delta_max), sep=' '))
       }
       
       #########################################################  
@@ -87,7 +94,7 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       
       #ES1 = chol(eta.2TT+B)
       #ES1 = backsolve(ES1, diag(1, nrow = TT)) 
-      rate.t2 = rate.theta2+1/2*QF#tcrossprod( t(Zt-eta.1T)%*%ES1 )
+      rate.t2=phi.2+1/2*QF
       Theta2 = 1/rgamma(1, shape.t2, rate.t2)
       keep.theta2[i,c] = Theta2
             
@@ -132,14 +139,14 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       mu=(a+(1+b)*(Zt[t+1]+Zt[t-1]-a))/(1+(1+b)^2)    
       tauSq=sigmaSq
       }
-      
+
       xi = Nt.obs[t]*tauSq + mu - lambertW_expArg(log(tauSq) + Nt.obs[t]*tauSq + mu)
-      logC = log_targetPoissonGauss(xi) - log_proposalGauss(xi)
+      logC = log_targetPoissonGauss(x=xi,n=Nt.obs[t],tauSq=tauSq,mu=mu) - log_proposalGauss(x=xi,tauSq=tauSq,xi=xi)
       while(TRUE)
       {
       x = rnorm(100, mean = xi, sd = sqrt(tauSq)) 
       u = runif(100, 0, 1)
-      check = log(u) <= log_targetPoissonGauss(x) - log_proposalGauss(x) - logC
+      check = log(u) <= log_targetPoissonGauss(x=x,n=Nt.obs[t],tauSq=tauSq,mu=mu) - log_proposalGauss(x=x,tauSq=tauSq,xi=xi) - logC
       if(sum(check)>0)
       {
         Zt[t] = x[check][1]
@@ -149,15 +156,19 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       
       }
       
-
-
+      #print(i)
+      if(i%%100 == 0){
+        cat(as.character(Sys.time()), " ", i, '\n')
+      }
     }
     
     
   }
-   
+end=proc.time()[3]
+   out=list(Keep.theta1=keep.theta1, Keep.theta2=keep.theta2,
+           Keep.b=keep.b,time=end-start)
+  return(out)
 }
-
 
 mcmc.al1=function(iters=3500, burn=1000, n.chains=2, theta1t.init=1, theta2t.init=theta2,theta3t.init=theta3,
                   M=3500,
