@@ -11,6 +11,7 @@ library(MASS)
 library(Rcpp)
 library(RcppArmadillo)
 library(RcppEigen)
+library(lamW)
 
 sourceCpp("optimfunctions.cpp")
 #subfun2_bis_wrap(Ns = c(10, 20, 30), M = 5000, theta1 = 1.5, theta2 = 1, b = -0.8)
@@ -181,6 +182,20 @@ for(n in 2:TT)
 }
 out=out+sum(dnorm(N1t,mean=z_hat,sd=sqrt(vars),log=TRUE))
 
+}
+return(out)
+}
+
+
+W2 = function(x)
+{
+if(x<=709)
+{
+out=lamW::lambertW0(exp(x))
+}else{
+  out=x - log(x) + log(x)/x + (log(x)*(log(x)-2))/(2*x^2) +
+    log(x)*(2*log(x)^2-9*log(x)+6)/(6*x^3) +
+    log(x)*(-12+36*log(x)-22*log(x)^2+3*log(x)^3)/(12*x^4)
 }
 return(out)
 }
