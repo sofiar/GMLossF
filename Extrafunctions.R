@@ -199,3 +199,11 @@ out=lamW::lambertW0(exp(x))
 }
 return(out)
 }
+
+log_targetPoissonGauss = function(x,n,tauSq,mu){
+  -exp(x) + x*n - 0.5/tauSq * (x-mu)^2
+}
+
+log_proposalGauss = function(x,tauSq,xi){
+  - 0.5/tauSq * (x-xi)^2
+}
