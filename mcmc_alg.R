@@ -23,19 +23,18 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
   
   start=proc.time()[3]
   cat(as.character(Sys.time())," MCMC go!.\n")
-  
   V = pi^2 / 3 # initialize V equal to its prior mean
   TT = length(Nt.obs)
   shape.t2 = phi.1 + TT/2
   eta.2TT =  eta.2*matrix(1, nrow = TT, ncol = TT)
   eta.2T = rep(eta.2, TT)
+  d1 = -(2*phi.1+TT)/2
+  d2 = 1/(2*phi.2)
   
   for (c in 1:n.chains)
   {
     # initialize parameter values
     Zt = log(Nt.obs)
-    #Theta1 = theta1.init[c]
-    #Theta2 = theta2.init[c]
     b = b.init[c]
     B = (1+b)^(abs(outer(1:TT, 1:TT, "-"))) # get B matrix
     beta = log( -b / (1+b) )
@@ -46,15 +45,49 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       ### 1. Sample beta through elliptical slice sampling ####
       #########################################################
       
+      # update log-likelihood of current value of b
+      ES1 = chol(eta.2TT+B)
+      loglike_Z = -sum( log(diag(ES1)) )
+      ES1 = backsolve( ES1, diag(1, nrow = TT) )
+      QF = tcrossprod( t(Zt-eta.1T)%*%ES1 )
+      loglike_Z = loglike_Z + d1*log( 1+d2*QF )
+      
       # update b, B and beta!
+      y = loglike_Z - log(runif(n=1,min=0,max=1))
+      delta = runif(n=1,min=0,max=2*pi)
+      delta_min = delta-2*pi
+      delta_max = delta
+      betaStar = rnorm(1,0,sqrt(V))
+      while(TRUE)
+      {
+        betaProp = beta*cos(delta) + betaStar*sin(delta)
+        b = -1/(1+exp(-betaProp))
+        B = (1+b)^(abs(outer(1:TT, 1:TT, "-"))) # get B matrix
+        ES1 = chol(eta.2TT+B)
+        loglike_Z = -sum( log(diag(ES1)) )
+        ES1 = backsolve( ES1, diag(1, nrow = TT) )
+        QF = tcrossprod( t(Zt-eta.1T)%*%ES1 )
+        loglike_Z = loglike_Z + d1*log( 1+d2*QF )
+        if(loglike_Z > y)
+        {
+          beta = betaProp
+          keep.b[i,c] = b
+          break
+        }
+        else
+        {
+          if(delta<=0){delta_min=delta}else{delta_max=delta}
+          delta = runif(n=1,min=delta_min,max=delta_max)
+        }
+      }
       
       #########################################################  
       ###         2. Sample theta2 (Inverse Gamma)         ####  
       #########################################################
       
-      ES1 = chol(eta.2TT+B)
-      ES1 = backsolve(ES1, diag(1, nrow = TT)) 
-      rate.t2 = rate.theta2 +1/2 * tcrossprod( t(Zt-eta.1T)%*%ES1 ) #t(Zt-eta.1)%*%inv.m%*%(Zt-eta.1)
+      #ES1 = chol(eta.2TT+B)
+      #ES1 = backsolve(ES1, diag(1, nrow = TT)) 
+      rate.t2 = rate.theta2+1/2*QF#tcrossprod( t(Zt-eta.1T)%*%ES1 )
       Theta2 = 1/rgamma(1, shape.t2, rate.t2)
       keep.theta2[i,c] = Theta2
       
