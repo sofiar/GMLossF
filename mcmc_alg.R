@@ -90,7 +90,7 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       rate.t2 = rate.theta2+1/2*QF#tcrossprod( t(Zt-eta.1T)%*%ES1 )
       Theta2 = 1/rgamma(1, shape.t2, rate.t2)
       keep.theta2[i,c] = Theta2
-      
+            
       #########################################################
       ###           3. Sample theta1 (Gaussian)             ###
       #########################################################
@@ -115,7 +115,42 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       ###     5. Sample Z=log(Nt) Acceptance-Rejection Al   ###
       #########################################################
       
+      # update sigmaSq and a
+      sigmaSq=-Theta2*b*(2+b)
+      a=-b*Theta1
+
+      for (t in 1:TT)
+      {
+      if(t==1)
+      {
+      mu=(Theta1*sigmaSq+(1+b)*(Zt[2]-a)*Theta2)/(sigmaSq+(1+b)^2*Theta2)
+      tauSq=sigmaSq*Theta2/(sigmaSq+(1+b)^2*Theta2)
+      }else if (t==TT) {
+      mu=a+(1+b)*Zt[TT-1]
+      tauSq=sigmaSq/(1+(1+b)^2)
+      }else {
+      mu=(a+(1+b)*(Zt[t+1]+Zt[t-1]-a))/(1+(1+b)^2)    
+      tauSq=sigmaSq
+      }
       
+      xi = Nt.obs[t]*tauSq + mu - lambertW_expArg(log(tauSq) + Nt.obs[t]*tauSq + mu)
+      logC = log_targetPoissonGauss(xi) - log_proposalGauss(xi)
+      while(TRUE)
+      {
+      x = rnorm(100, mean = xi, sd = sqrt(tauSq)) 
+      u = runif(100, 0, 1)
+      check = log(u) <= log_targetPoissonGauss(x) - log_proposalGauss(x) - logC
+      if(sum(check)>0)
+      {
+        Zt[t] = x[check][1]
+        break
+      }
+      }
+      
+      }
+      
+
+
     }
     
     
