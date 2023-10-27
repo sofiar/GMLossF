@@ -187,7 +187,7 @@ return(out)
 }
 
 
-W2 = function(x)
+lambertW_expArg = function(x)
 {
 if(x<=709)
 {
