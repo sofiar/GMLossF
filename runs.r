@@ -29,7 +29,7 @@ results=mcmc.quasiGibbs(iters=10000, burn=1000, n.chains=2, #theta1.init, theta2
                   # prior parameters
                   phi.1=theta2^2/1+2, phi.2=(theta2^2+1)*theta2, eta.1=theta1, eta.2=1)
 
-
+save.image("./data_results.RData")
 #results$time
 #results$Keep.b
 #results$Keep.theta1
