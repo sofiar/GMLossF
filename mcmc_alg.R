@@ -56,7 +56,7 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       # update b, B and beta!
       #y0 = loglike_Z
       #uu = runif(n=1,min=0,max=1)
-      y = loglike_Z - log(runif(n=1,min=0,max=1))
+      y = loglike_Z + log(runif(n=1,min=0,max=1))
       delta = runif(n=1,min=0,max=2*pi)
       delta_min = delta-2*pi
       delta_max = delta
