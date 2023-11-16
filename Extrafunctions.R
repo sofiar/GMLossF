@@ -207,3 +207,28 @@ log_targetPoissonGauss = function(x,n,tauSq,mu){
 log_proposalGauss = function(x,tauSq,xi){
   - 0.5/tauSq * (x-xi)^2
 }
+
+
+Simulate_Gompertz=function(TT,a,b,sigma2)
+{
+
+Nt=numeric(TT)
+theta1=-a/b
+theta2=-sigma2/(b*(b+2))
+
+Nt[1]=exp(rnorm(1,theta1,sqrt(theta2)))
+Es=rnorm(TT,0,sqrt(sigma2))
+
+for(t in 2:TT)
+{
+Nt[t]=Nt[t-1]*exp(a+b*log(Nt[t-1])+Es[(t-1)])  
+}
+
+Nt.obs=numeric(TT)
+
+for(t in 1:TT)
+{Nt.obs[t]=rpois(1,lambda=Nt[t])}
+
+return(Nt.obs)
+
+}
