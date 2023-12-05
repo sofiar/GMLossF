@@ -5,16 +5,17 @@ source('dkolmo.R')
 source('rpostlogiskolmo.R')
 
 ###############################################################################################
-## This function computes the alg considering the likelihood computed via important sampling.##
-## parameters: theta1,theta2,b (To be rewritten)                                             ##
+#                                                                                             #
+#                                                                                             #
 ###############################################################################################
+
 
 mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2.init,
                   b.init,
                   # Observations
                   Nt.obs,
                   # prior parameters
-                  phi.1, phi.2, eta.1, eta.2)
+                  phi.1, phi.2, eta.1, eta.2,c=1)
   
 {
   keep.theta1 = array(0, dim = c(iters,n.chains))
@@ -24,18 +25,23 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
   start=proc.time()[3]
   cat(as.character(Sys.time())," MCMC go!.\n")
   V = pi^2 / 3 # initialize V equal to its prior mean
+  lambda = phi.2/phi.1 # initialize lambda equal to its prior mean
   TT = length(Nt.obs)
-  shape.t2 = phi.1 + TT/2
+  #shape.t2 = phi.1 + TT/2
+  shape.t2 = 1 + TT/2
   eta.1T=rep(eta.1,TT)
   eta.2TT =  eta.2*matrix(1, nrow = TT, ncol = TT)
   eta.2T = rep(eta.2, TT)
-  d1 = -(2*phi.1+TT)/2
-  d2 = 1/(2*phi.2)
+  # d1 = -(2*phi.1+TT)/2 # for inverse gamma prior theta2
+  # d2 = 1/(2*phi.2)
+  d1 = -(2+TT)/2
+  d2 = 1/(2*lambda)
   
   for (c in 1:n.chains)
   {
     # initialize parameter values
     Zt = log(Nt.obs)
+    if(sum(is.infinite(Zt))>0){Zt[is.infinite(Zt)]= 0}
     b = b.init[c]
     B = (1+b)^(abs(outer(1:TT, 1:TT, "-"))) # get B matrix
     beta = log( -b / (1+b) )
@@ -60,7 +66,7 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       delta = runif(n=1,min=0,max=2*pi)
       delta_min = delta-2*pi
       delta_max = delta
-      betaStar = rnorm(1,0,sqrt(V))
+      betaStar = rnorm(1,0,sqrt(c*V))
      #cc = 0
       while(TRUE)
       {
@@ -94,8 +100,11 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       
       #ES1 = chol(eta.2TT+B)
       #ES1 = backsolve(ES1, diag(1, nrow = TT)) 
-      rate.t2=phi.2+1/2*QF
-      Theta2 = 1/rgamma(1, shape.t2, rate.t2)
+      rate.t2=lambda+1/2*QF      
+      Theta2 = 1/rgamma(1, shape=shape.t2, rate=rate.t2)
+      # original inverse gamma update
+      #rate.t2=phi.2+1/2*QF
+      #Theta2 = 1/rgamma(1, shape=shape.t2, rate=rate.t2)
       keep.theta2[i,c] = Theta2
             
       #########################################################
@@ -116,7 +125,9 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       ###  4. Sample V through acceptance-rejection method  ###
       #########################################################
       
-      V = rpostlogiskolmo(n = 1, x = beta)
+      V = rpostlogiskolmo(n = 1, x = beta/sqrt(c))
+      lambda = rgamma(n=1,shape=phi.2+1,rate=1/theta2+phi.1) 
+      d2 = 1/(2*lambda)
       
       #########################################################
       ###     5. Sample Z=log(Nt) Acceptance-Rejection Al   ###
@@ -157,7 +168,7 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       }
       
       #print(i)
-      if(i%%100 == 0){
+      if(i%%1000 == 0){
         cat(as.character(Sys.time()), " ", i, '\n')
       }
     }
@@ -467,6 +478,4 @@ theta3t.init=theta3,
 }
 
   
-
-
 
