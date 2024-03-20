@@ -3,13 +3,9 @@ library(ggplot2)
 library(tidyverse)
 library(patchwork)
 source('Extrafunctions.R')
-load("LF1.RData")
+#load("LF1.RData")
+load("data_results.RData")
 
-nrep
-ii
-nrep=ii
-burn=2000
-n=1
 ### create df
 iters=length(chains1[[n]][,1])
 true_values=rep(thetas1t,each=nrep*nchains)

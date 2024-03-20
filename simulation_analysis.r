@@ -50,7 +50,7 @@ b=bi
             for (n in 1:1)
             {
             # simulate time series 
-            Nt.obs=Simulate_Gompertz(TT=30,a=a,b=b,sigma2=sigma2)
+            Nt.obs=Simulate_Gompertz(TT=50,a=a,b=b,sigma2=sigma2)
             # run mcmc 
             results=mcmc.quasiGibbs(iters=iters, burn=burn, n.chains=1,
             b.init=-runif(1), Nt.obs, phi.1=0.1, phi.2=0.1, eta.1=0, eta.2=100)

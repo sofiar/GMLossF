@@ -31,7 +31,7 @@ library(ggplot2)
 #a=-b*expt1
 #sigma2=-expt2*b*(2+b)
 
-TT=500
+TT=30
 nsims=1
 
 Nt=matrix(NA,nrow=TT,ncol=nsims)
@@ -56,7 +56,7 @@ for(t in 1:TT)
 } 
 
 # to avoid -Inf values 
-Nt.obs[Nt.obs==0]=0.01
+#Nt.obs[Nt.obs==0]=0.01
 ### Transform data 
 lN=log(Nt)
 lN.obs=log(Nt.obs)

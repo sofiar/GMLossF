@@ -8,12 +8,12 @@ library(future.apply)
 library(doParallel)
 library(future.batchtools)
 library(MASS)
-library(Rcpp)
-library(RcppArmadillo)
-library(RcppEigen)
+#library(Rcpp)
+#library(RcppArmadillo)
+#library(RcppEigen)
 library(lamW)
 
-sourceCpp("optimfunctions.cpp")
+#sourceCpp("optimfunctions.cpp")
 #subfun2_bis_wrap(Ns = c(10, 20, 30), M = 5000, theta1 = 1.5, theta2 = 1, b = -0.8)
 #subfun2(Ns = c(10, 20, 30), M = 5000, theta1 = 1.5, theta2 = 1, b = -0.8)
 
@@ -232,3 +232,22 @@ for(t in 1:TT)
 return(Nt.obs)
 
 }
+
+
+##### Simulation Gompertz with log normal error
+
+Simulate_Gompertz_ln = function(TT,a,b,sigma2,tau2)
+{
+  Y = numeric(TT)
+  mu = -a/b
+  var = sigma2/(1-((1+b)^2))+tau2
+  Y[1] = rnorm(1,mu,sqrt(var))
+  for(i in 2:length(Y))
+  {
+  mu = a+(1+b)*(mu+(var-tau2)/var*(Y[i-1]-mu))
+  var = (1+b)^2*(var-tau2)/var*tau2+sigma2+tau2
+  Y[i] = rnorm(1,mu,sqrt(var))
+  } 
+return(exp(Y))
+}
+
