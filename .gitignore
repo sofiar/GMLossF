@@ -1,0 +1,12 @@
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore directories
+Rdata/
+old_results/
+
+# Ignore type files
+*.png
+
