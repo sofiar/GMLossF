@@ -6,7 +6,7 @@
 # Ignore directories
 Rdata/
 old_results/
-
+Old_scripts/
 # Ignore type files
 *.png
 *.pdf
