@@ -7,16 +7,15 @@ This project aims to develop an inference method for estimating the parameters o
 
 This repository contains various folders, each serving a specific purpose. Below is an overview of what you'll find in each folder:
 
-## /Main_scripts
+### /Main_scripts
 The `/Main_scripts` folder contains the source code of the main project. It includes all files related to the Markov Chain Monte Carlo (MCMC) algorithm and simulation analysis.
 
-## /Secondary_scripts
+### /Secondary_scripts
 The `/Seconday_scripts` folder contains the source code of the simulation study where we compare the behavior of the profile of the likelihood and the composite likelihood. 
 
-## /Extra_scripts
+### /Extra_scripts
 The `/Extra_scripts` folder contains additional source code for further analysis, such as processing results or generating plots.
 
-
-## /Real_Data_analysis
+### /Real_Data_analysis
 The `/Real_Data_analysis` folder contains the source code for analyzing the American Redstart data.
 GIT 
