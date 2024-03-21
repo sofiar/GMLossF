@@ -38,32 +38,52 @@ for (n in 1:nsims) {
 return(curll)
 }
 
-approx.CL2=function(Nobs,theta1,theta2,theta3,M)
-{
-nsims=dim(Nobs)[2]
-Times=dim(Nobs)[1]
-curll=0
-b=-2*(theta3)/(1+theta3)
-cov_matrix=theta2*matrix(c(1,1+b,1+b,1),nrow=2)
-mu=rep(theta1, 2)
-for (n in 1:nsims) {
- for (t in 1:(Times-1)) {
-    N.sample <- exp(mvrnorm(M, mu = mu, Sigma = cov_matrix))
-    positive_rows <- apply(N.sample, 1, function(row) all(row > 0))
-    N.sample <- N.sample[positive_rows, , drop = FALSE]
-    dp1=dpois(Nobs[t,n], lambda = N.sample[,1])
-    dp2=dpois(Nobs[t+1,n], lambda = N.sample[,2])
-    #dp=cbind(dp1,dp2)
-    dp=dp1*dp2
-    dp[dp == 0] <- 0.0001
+# approx.CL2=function(Nobs,theta1,theta2,theta3,M)
+# {
+# nsims=dim(Nobs)[2]
+# Times=dim(Nobs)[1]
+# curll=0
+# b=-2*(theta3)/(1+theta3)
+# cov_matrix=theta2*matrix(c(1,1+b,1+b,1),nrow=2)
+# mu=rep(theta1, 2)
+# for (n in 1:nsims) {
+#  for (t in 1:(Times-1)) {
+#     N.sample <- exp(mvrnorm(M, mu = mu, Sigma = cov_matrix))
+#     positive_rows <- apply(N.sample, 1, function(row) all(row > 0))
+#     N.sample <- N.sample[positive_rows, , drop = FALSE]
+#     dp1=dpois(Nobs[t,n], lambda = N.sample[,1])
+#     dp2=dpois(Nobs[t+1,n], lambda = N.sample[,2])
+#     #dp=cbind(dp1,dp2)
+#     dp=dp1*dp2
+#     dp[dp == 0] <- 0.0001
     
-    curll <- curll + log(mean(dp))
+#     curll <- curll + log(mean(dp))
    
-  #print(curll)
+#   #print(curll)
 
-    }
+#     }
+# }
+# return(curll)
+# }
+
+approx.CL2=function(Nobs,theta1,theta2,b,M)
+{
+#nsims=dim(Nobs)[2]
+curr=0
+Times=length(Nobs)
+mu=rep(theta1, 2)
+for (t1 in 1:(Times-1)) {
+for (t2 in (t1+1):(Times)) {
+B = (1+b)^(abs(outer(c(1,abs(t2-t1+1)),c(1,abs(t2-t1+1)) , "-"))) # get B matrix
+cov_matrix=theta2*B
+#cov_matrix=theta2*matrix(c(1,(1+b)^abs(t2-t1),(1+b)^(t2-t1),1),nrow=2)
+N.sample <- exp(mvrnorm(M, mu = mu, Sigma = cov_matrix))
+#logval =dpois(Nobs[t1],N.sample[,1],log=TRUE)+dpois(Nobs[t2],N.sample[,2],log=TRUE)
+logval = colSums(dpois(Nobs[c(t1,t2)],t(N.sample),log=TRUE))
+curr = curr-log(M) + log( sum(exp(logval)))
+}    
 }
-return(curll)
+return(curr)
 }
 
 subfun=function(Ns,M,theta1,theta2)
