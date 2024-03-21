@@ -10,6 +10,187 @@ source('rpostlogiskolmo.R')
 ###############################################################################################
 
 
+mcmc.quasiGibbs_v2=function(iters=3500, burn=1000, n.chains=2, theta1.init, theta2.init,
+                  b.init,
+                  # Observations
+                  Nt.obs,
+                  # prior parameters
+                  phi.1, phi.2, eta.1, eta.2,c=1)
+  
+{
+  keep.theta1 = array(0, dim = c(iters,n.chains))
+  keep.theta2 = array(0, dim = c(iters,n.chains))
+  keep.b = array(0, dim = c(iters,n.chains)) 
+  
+  start=proc.time()[3]
+  cat(as.character(Sys.time())," MCMC go!.\n")
+  V = pi^2 / 3 # initialize V equal to its prior mean
+  lambda = phi.2/phi.1 # initialize lambda equal to its prior mean
+  TT = length(Nt.obs)
+  #shape.t2 = phi.1 + TT/2
+  shape.t2 = 1 + TT/2
+  eta.1T=rep(eta.1,TT)
+  eta.2TT =  eta.2*matrix(1, nrow = TT, ncol = TT)
+  eta.2T = rep(eta.2, TT)
+  # d1 = -(2*phi.1+TT)/2 # for inverse gamma prior theta2
+  # d2 = 1/(2*phi.2)
+  
+  for (c in 1:n.chains)
+  {
+    # initialize parameter values
+    Zt = log(Nt.obs)
+    if(sum(is.infinite(Zt))>0){Zt[is.infinite(Zt)]= 0}
+    b = b.init[c]
+    theta1=theta1.init[c]
+    theta2=theta2.init[c]
+    B = (1+b)^(abs(outer(1:TT, 1:TT, "-"))) # get B matrix
+    beta = log( -b / (1+b) )
+    
+    for (i in 1:iters)
+    {
+      #########################################################
+      ### 1. Sample beta through elliptical slice sampling ####
+      #########################################################
+      
+      if(FALSE){
+        # update log-likelihood of current value of b
+      ES1=chol(B)
+      loglike_Z=-sum(log(diag(ES1))) 
+      ES1 = backsolve( ES1, diag(1, nrow = TT) )
+      ES1 = tcrossprod( t(Zt-rep(theta1,TT))%*%ES1 )
+      loglike_Z = loglike_Z -0.5*ES1/theta2
+            # update b, B and beta!
+      #y0 = loglike_Z
+      #uu = runif(n=1,min=0,max=1)
+      y = loglike_Z + log(runif(n=1,min=0,max=1))
+      delta = runif(n=1,min=0,max=2*pi)
+      delta_min = delta-2*pi
+      delta_max = delta
+      betaStar = rnorm(1,0,sqrt(c*V))
+     #cc = 0
+      while(TRUE)
+      {
+       #cc = cc + 1
+        betaProp = beta*cos(delta) + betaStar*sin(delta)
+        b = -1/(1+exp(-betaProp))
+        B = (1+b)^(abs(outer(1:TT, 1:TT, "-"))) # get B matrix
+        ES1=chol(B)
+        loglike_Z=-sum(log(diag(ES1))) 
+        ES1 = backsolve( ES1, diag(1, nrow = TT) )
+        ES1 = tcrossprod( t(Zt-rep(theta1,TT))%*%ES1 )
+        loglike_Z = loglike_Z -0.5*ES1/theta2
+        #print(paste(betaProp, b, loglike_Z, sep = '  '))
+        if(any(loglike_Z > y, delta_max - delta_min < sqrt(.Machine$double.eps)))
+        {
+          beta = betaProp
+          keep.b[i,c] = b
+          break
+        }
+        else
+        {
+          if(delta<=0){delta_min=delta}else{delta_max=delta}
+          delta = runif(n=1,min=delta_min,max=delta_max)
+        }
+        #print(paste(cc, abs(delta_min-delta_max), sep=' '))
+     
+
+      }
+      }
+      
+      #########################################################  
+      ### 2. Sample theta2 (Conditional Inverse Gamma)     ####  
+      #########################################################
+      
+      ES2 = backsolve(chol(eta.2TT+B), diag(1, nrow = TT))
+      ES2 = tcrossprod( t(Zt-eta.1T)%*%ES2 )
+      
+      rate.t2=lambda+1/2*ES2      
+      Theta2 = 1/rgamma(1, shape=shape.t2, rate=rate.t2)
+      # original inverse gamma update
+      #rate.t2=phi.2+1/2*QF
+      #Theta2 = 1/rgamma(1, shape=shape.t2, rate=rate.t2)
+      keep.theta2[i,c] = Theta2
+            
+      #########################################################
+      ###           3. Sample theta1 (Gaussian)             ###
+      #########################################################
+      
+      inv.B = chol2inv(chol(B))
+      pp = eta.2T%*%inv.B
+      mean.t1 = pp%*%Zt+eta.1
+      var.t1 = Theta2*eta.2
+      pp = pp%*%rep(1,TT) + 1
+      mean.t1 = mean.t1/pp
+      var.t1 = var.t1/pp
+      Theta1 = rnorm(1, mean.t1, sd=sqrt(var.t1))
+      keep.theta1[i,c] = Theta1
+      
+      #########################################################
+      ###             4. Sample V and lambda                ###
+      #########################################################
+      
+      V = rpostlogiskolmo(n = 1, x = beta/sqrt(c))
+      lambda = rgamma(n=1,shape=phi.2+1,rate=1/theta2+phi.1)
+      
+      #########################################################
+      ###     5. Sample Z=log(Nt) Acceptance-Rejection Al   ###
+      #########################################################
+      
+      # update sigmaSq and a
+      sigmaSq=-Theta2*b*(2+b)
+      a=-b*Theta1
+
+      for (t in 1:TT)
+      {
+      if(t==1)
+      {
+      mu=(Theta1*sigmaSq+(1+b)*(Zt[2]-a)*Theta2)/(sigmaSq+(1+b)^2*Theta2)
+      tauSq=sigmaSq*Theta2/(sigmaSq+(1+b)^2*Theta2)
+      }else if (t==TT) {
+      mu=a+(1+b)*Zt[TT-1]
+      tauSq=sigmaSq/(1+(1+b)^2)
+      }else {
+      mu=(a+(1+b)*(Zt[t+1]+Zt[t-1]-a))/(1+(1+b)^2)    
+      tauSq=sigmaSq
+      }
+
+      xi = Nt.obs[t]*tauSq + mu - lambertW_expArg(log(tauSq) + Nt.obs[t]*tauSq + mu)
+      logC = log_targetPoissonGauss(x=xi,n=Nt.obs[t],tauSq=tauSq,mu=mu) - log_proposalGauss(x=xi,tauSq=tauSq,xi=xi)
+      while(TRUE)
+      {
+      x = rnorm(100, mean = xi, sd = sqrt(tauSq)) 
+      u = runif(100, 0, 1)
+      check = log(u) <= log_targetPoissonGauss(x=x,n=Nt.obs[t],tauSq=tauSq,mu=mu) - log_proposalGauss(x=x,tauSq=tauSq,xi=xi) - logC
+      if(sum(check)>0)
+      {
+        Zt[t] = x[check][1]
+        break
+      }
+      }
+      
+      }
+      
+      #print(i)
+      if(i%%1000 == 0){
+        cat(as.character(Sys.time()), " ", i, '\n')
+      }
+    }
+    
+    
+  }
+end=proc.time()[3]
+   out=list(Keep.theta1=keep.theta1, Keep.theta2=keep.theta2,
+           Keep.b=keep.b,time=end-start)
+  return(out)
+}
+
+
+
+###############################################################################################
+#                                                                                             #
+#                                                                                             #
+###############################################################################################
+
 mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2.init,
                   b.init,
                   # Observations
@@ -52,6 +233,8 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
       ### 1. Sample beta through elliptical slice sampling ####
       #########################################################
       
+      for(ithin in 1:1e+4){
+
       # update log-likelihood of current value of b
       ES1 = chol(eta.2TT+B)
       loglike_Z = -sum( log(diag(ES1)) )
@@ -92,6 +275,8 @@ mcmc.quasiGibbs=function(iters=3500, burn=1000, n.chains=2, #theta1.init, theta2
           delta = runif(n=1,min=delta_min,max=delta_max)
         }
         #print(paste(cc, abs(delta_min-delta_max), sep=' '))
+      }
+
       }
       
       #########################################################  
