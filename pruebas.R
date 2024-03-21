@@ -3,6 +3,7 @@ source('mcmc_alg.R')
 
 
 # prior parameters
+
  #theta1t0 = log(-a/b)
  #theta2t0 = log(sigma2/(-b(2+b)))
  #theta3t0 = log((1+b/2)/(1-b/2))
