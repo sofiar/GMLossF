@@ -70,11 +70,20 @@ parallel::stopCluster(cluster)
 
 save.image('./all_likelihoods_parallel4.RData') 
 ###################
+# Load and plot
+#load('./Rdata/all_likelihoods_parallel4.RData') 
+load('./Rdata/all_likelihoods_parallel3.RData') 
 
-# load('./all_likelihoods_parallel4.RData') 
+cl_mean=apply(y_scl,1,mean,na.rm=TRUE)
+l_mean=apply(y_stl,1,mean,na.rm=TRUE)
+l_q1=apply(y_stl,1,quantile,probs=0.01,na.rm=TRUE)
+l_q2=apply(y_stl,1,quantile,probs=0.99,na.rm=TRUE)
 
-# l_mean=apply(y_stl,1,mean,na.rm=TRUE)
-# cl_mean=apply(y_scl,1,mean,na.rm=TRUE)
+## Check mean and quantiles
+#  plot(b_s,l_mean,type='l',col='blue',main='Likelihood')
+#  lines(b_s,l_q1,type='l',col='grey')
+#  lines(b_s,l_q2,type='l',col='grey')
+#  abline(v=b,col='blue')
 
 # png(file="compare_plots4.png")
 # par(mfrow=c(1,2))
