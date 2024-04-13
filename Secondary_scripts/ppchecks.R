@@ -3,6 +3,7 @@
 #######################################################
 library(readr)
 library(ggplot2)
+library(truncnorm)
 
 source('./Main_scripts/Extrafunctions.R')
 
@@ -14,21 +15,20 @@ n=length(American_redStart$redstart)
 nsims=1000
 
 # 1. Fix theta 1 and theta 2
-theta1 = 1.9244
-theta2 = (0.4726)^2
+theta1_s = rep(1.9244,nsims) 
+theta2_s = rep((0.4726)^2,nsims)
 
 # 2. Sampling theta 1 and theta 2
-phi.1=2 #0.1
-phi.2=0.1
+phi.1=1 #0.1
+phi.2=1 #0.1
 eta.1=0
-eta.2=100
+eta.2=1
 theta2_s=1/rgamma(nsims,shape=phi.1,rate=phi.2)
-theta1_s= rnorm(nsims,mean=eta.1,sd=sqrt(theta2*eta.2))
-
+#theta1_s= rnorm(nsims,mean=eta.1,sd=sqrt(theta2_s*eta.2))
+theta1_s= rtruncnorm(nsims, a=0, b=Inf, mean = eta.1, sd = sqrt(theta2_s*eta.2))
 # sample b
 set.seed(100)
 bs=-runif(nsims)
-
 
 # histogram of the priors
 hist(bs)
@@ -93,3 +93,4 @@ hist(tot_max)
 abline(v=max(American_redStart$redstart),lty=2,col='red',main=max)
 dev.off()
 
+# comment
