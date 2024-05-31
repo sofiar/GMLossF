@@ -4,7 +4,8 @@
 rm(list = ls(all.names = TRUE)); gc(); cat("\14")
 
 
-source_dir = "Functions"
+#source_dir = "Functions"
+source_dir = '/u/ruizsuar/GMLossF/Functions'
 
 files = list.files(source_dir, pattern = "\\.R$", full.names = TRUE)
 for (ifun in files) source(ifun)
@@ -22,10 +23,10 @@ sigmaSq_s = -b_s * (2 + b_s) * theta2_s
 
 niters = 2500
 nsim = 1e+4
-psi1 = 0.01
-psi2 = 0.01
-eta1 = 0
-eta2 = 100
+psi1 = 3 #0.01
+psi2 = 2 #0.01
+eta1 = 3.5 #0
+eta2 = 2.2635 #100
 c = 1
 starter = NULL
 burn = 1
@@ -68,7 +69,7 @@ for (b_curr in b_s) {
       save(
         list = c("keep_time", "keep_percentiles", "keep_postMeans"),
         file = paste(
-          "./Rdata/","postComp_", "theta1_", theta1_curr, "___", "theta2_",
+          "/u/ruizsuar/GMLossF/Rdata/","postComp_", "theta1_", theta1_curr, "___", "theta2_",
           theta2_curr, "___", "b_", abs(b_curr), ".RData", sep = ""
         )
       )

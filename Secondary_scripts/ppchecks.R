@@ -4,8 +4,9 @@
 library(readr)
 library(ggplot2)
 library(truncnorm)
+library(sn)
 
-source('./Main_scripts/Extrafunctions.R')
+source('./Functions/Extrafunctions.R')
 
 # load real data
 American_redStart = read_csv("./Real_Data_analysis/American_redStart2.csv")
@@ -19,16 +20,23 @@ theta1_s = rep(1.9244,nsims)
 theta2_s = rep((0.4726)^2,nsims)
 
 # 2. Sampling theta 1 and theta 2
-phi.1=1 #0.1
-phi.2=1 #0.1
-eta.1=0
-eta.2=1
-theta2_s=1/rgamma(nsims,shape=phi.1,rate=phi.2)
-#theta1_s= rnorm(nsims,mean=eta.1,sd=sqrt(theta2_s*eta.2))
-theta1_s= rtruncnorm(nsims, a=0, b=Inf, mean = eta.1, sd = sqrt(theta2_s*eta.2))
-# sample b
+phi.1= 3 #1 #0.1
+phi.2= 2 #0.1
+
+phi.2/(phi.1-1)
+
+eta.1= 3.5 #0
+eta.2= 2.2635 #100
+
 set.seed(100)
-bs=-runif(nsims)
+theta2_s = 1/rgamma(nsims,shape=phi.1,rate=phi.2)
+theta1_s = rnorm(nsims,mean=eta.1,sd=sqrt(theta2_s*eta.2))
+#theta1_s = rsn(nsims,xi=eta.1,omega=sqrt(eta.2*theta2_s),alpha=100)
+#theta1_s= rtruncnorm(nsims, a=0, b=Inf, mean = eta.1, sd = sqrt(theta2_s*eta.2))
+# sample b
+bs = -runif(nsims)
+
+sum(theta1_s<0)
 
 # histogram of the priors
 hist(bs)
@@ -83,14 +91,15 @@ tot_min=apply(Nsims, 1, min)
 tot_sd=apply(Nsims, 1, sd)
 
 par(mfrow=c(2,2))
-hist(tot_mean)
-abline(v=mean(American_redStart$redstart),lty=2,col='red',main=min)
-hist(tot_min)
-abline(v=min(American_redStart$redstart),lty=2,col='red',main=min)
-hist(tot_sd)
-abline(v=sd(American_redStart$redstart),lty=2,col='red',main=sd)
-hist(tot_max)
-abline(v=max(American_redStart$redstart),lty=2,col='red',main=max)
+boxplot(tot_mean)
+abline(h=mean(American_redStart$redstart),lty=2,col='red',main=min)
+boxplot(tot_min)
+abline(h=min(American_redStart$redstart),lty=2,col='red',main=min)
+boxplot(tot_sd)
+abline(h=sd(American_redStart$redstart),lty=2,col='red',main=sd)
+boxplot(tot_max)
+abline(h=max(American_redStart$redstart),lty=2,col='red',main=max)
 dev.off()
 
-# comment
+summary(tot_mean)
+mean(American_redStart$redstart)
