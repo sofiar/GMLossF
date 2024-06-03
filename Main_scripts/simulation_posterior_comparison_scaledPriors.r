@@ -21,14 +21,14 @@ T = 50
 a_s = -b_s * theta1_s
 sigmaSq_s = -b_s * (2 + b_s) * theta2_s
 
-niters = 2500
+niters = 1
 nsim = 1e+4
 phi1 = 0.5
 phi2 = 0.5
 zeta1 = 0
 zeta2 = 100
 nu = 100
-c = 1
+c = 2
 starter = NULL
 burn = 1
 thin = 1
@@ -52,13 +52,18 @@ for (b_curr in b_s) {
           T, theta1 = theta1_curr, theta2 = theta2_curr, b = b_curr
         )
         start_time = Sys.time()
-        res = GompPois_ScaledPriors_quasiGibbs (
+        # res = GompPois_ScaledPriors_quasiGibbs (
+        #  nsim, Nstar, phi1, phi2, nu, zeta1, zeta2, c,
+        #  starter = NULL, burn = 1, thin = 1, verbose = +Inf
+        # ) 
+        res = GompPois_UScaledPriors_quasiGibbs (
          nsim, Nstar, phi1, phi2, nu, zeta1, zeta2, c,
          starter = NULL, burn = 1, thin = 1, verbose = +Inf
         ) 
+
         
         keep_time[iiters] = difftime(Sys.time(), start_time, units = "sec")
-        print(difftime(Sys.time(), start_time, units = "sec"))
+        #print(difftime(Sys.time(), start_time, units = "sec"))
         keep_percentiles[iiters, , 1] = quantile(res$theta1, probs = probs)
         keep_percentiles[iiters, , 2] = quantile(res$theta2, probs = probs)
         keep_percentiles[iiters, , 3] = quantile(res$b, probs = probs)
@@ -70,7 +75,7 @@ for (b_curr in b_s) {
       save(
         list = c("keep_time", "keep_percentiles", "keep_postMeans"),
         file = paste(
-          "/u/ruizsuar/GMLossF/Rdata/","postComp_scaledPrior_", "theta1_", theta1_curr, "___", "theta2_",
+          "/u/ruizsuar/GMLossF/Rdata/","postComp_UscaledPrior_", "theta1_", theta1_curr, "___", "theta2_",
           theta2_curr, "___", "b_", abs(b_curr), ".RData", sep = ""
         )
       )
