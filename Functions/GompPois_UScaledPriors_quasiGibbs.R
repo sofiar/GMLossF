@@ -31,9 +31,6 @@
 #     theta2 ~ invlomax(phi1, phi2)
 #     theta1 | theta2 ~ student-t(nu, zeta1, zeta2 * theta2)
 #
-# Notice that this implies
-#
-#     if c == 1 then b ~ U(-1, 0)
 #
 # The following scheme is used
 #
