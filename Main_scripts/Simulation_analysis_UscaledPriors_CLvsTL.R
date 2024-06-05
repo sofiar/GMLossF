@@ -22,7 +22,7 @@ T = 30
 a_s = -b_s * theta1_s
 sigmaSq_s = -b_s * (2 + b_s) * theta2_s
 
-niters = 10
+niters = 1
 nsim = 1e+4
 phi1 = 0.5
 phi2 = 0.5
@@ -56,6 +56,8 @@ for (b_curr in b_s) {
       keep_time_cl = double(niters)
       keep_acceptance_rate = double(niters)
 
+      keep_output_mm = matrix(NA, nrow = niters, ncol = 3)
+
       itriplet = itriplet + 1
 
       for (iiters in 1:niters) {
@@ -64,10 +66,16 @@ for (b_curr in b_s) {
         ######################## Simulate data ########################
         ###############################################################
 
-        Nstar = GompPois_simulate(
           T, theta1 = theta1_curr, theta2 = theta2_curr, b = b_curr
         )
+        
         start_time = Sys.time()
+
+        ###############################################################
+        #################### Fit Methods of Moments ###################
+        ###############################################################
+        
+        keep_output_mm[iiters,] = unlist(GompPois_MoM(Nstar)[1:3])
         
         ###############################################################
         ################ Fit true likelihood model ####################
@@ -129,22 +137,26 @@ for (b_curr in b_s) {
         keep_postMeans_cl[iiters, 3] = mean(res_cl$b)
         keep_acceptance_rate[iiters] = res_cl$true_accep_rate
 
+
+        
+
       print(paste('iteration ',iiters,' of ', niters,' for triplet ',itriplet,
       ' of triplet ',ntriplets, ' at time ',Sys.time(),sep=''))
-      
-      
-      }
-     # Save RData 
+      # Save RData 
+     
       save(
         list = c("keep_time_tl", "keep_percentiles_tl", "keep_postMeans_tl",
                  "keep_time_cl", "keep_percentiles_cl", "keep_postMeans_cl",
                  "keep_acceptance_rate","niters","nsim","phi1","phi2","zeta2",
-                 "nu","c","starter","burn","thin","verbose"),
+                 "nu","c","starter","burn","thin","verbose","keep_output_mm"),
         file = paste(
           "/u/ruizsuar/GMLossF/Rdata/","SimStudy_UscaledPrior", "theta1_", theta1_curr, "___", "theta2_",
           theta2_curr, "___", "b_", abs(b_curr), ".RData", sep = ""
         )
       )
+      
+      }
+     
     }
   }
 }
