@@ -52,6 +52,7 @@ post_sample_likelihood[2, post_sample_likelihood[2, ] == 0] = 0 + .Machine$doubl
 post_sample_likelihood[3, post_sample_likelihood[3, ] == -1] = -1 + .Machine$double.eps
 post_sample_likelihood[3, post_sample_likelihood[3, ] == 0] = 0 - .Machine$double.eps
 
+
 transf_post_sample = post_sample_likelihood
 transf_post_sample[2 ,] = log(post_sample_likelihood[2, ])
 transf_post_sample[3, ] = log(
@@ -84,12 +85,46 @@ c(
 unlist(GompPois_MoM(Nstar)[c(1,2,3)])
 
 
-save.image("/u/ruizsuar/GMLossF/Rdata/realDataResults2.RData")
+# save.image("/u/ruizsuar/GMLossF/Rdata/realDataResults2.RData")
+
+################### Check results ##########################
+
+# load("/u/ruizsuar/GMLossF/Rdata/realDataResults2.RData")
 
 # plot(post_sample_likelihood[1, ], type = "l")
 # plot(post_sample_likelihood[2, ], type = "l")
 # plot(post_sample_likelihood[3, ], type = "l")
 
 # plot(post_sample_complike$theta1, type = "l")
+# points(post_sample_complike$theta1, type = "l", col = "red")
 # plot(post_sample_complike$theta2, type = "l")
 # plot(post_sample_complike$b, type = "l")
+
+
+
+# difftime(time_end_complike, time_start_complike, "min")
+# mean(sqrt(post_sample_complike$theta2))
+# mean(post_sample_complike$theta1)
+# mean(post_sample_complike$b)
+
+
+# mean(sqrt(post_sample_likelihood[2,]))
+# mean(post_sample_likelihood[1,])
+# mean(post_sample_likelihood[3,])
+# par(mfrow = c(1,2))
+# dev.off()
+
+# sns::ess(post_sample_likelihood[1 ,])
+# sns::ess(post_sample_complike$theta1)
+
+# sns::ess(post_sample_likelihood[2 ,])
+# sns::ess(post_sample_complike$theta2)
+
+# sns::ess(post_sample_likelihood[3 ,])
+# sns::ess(post_sample_complike$b)
+
+# acceptance rate for MH in CL approach
+
+d = diff(post_sample_complike$theta1)
+sum(d!=0)/length(d)
+
