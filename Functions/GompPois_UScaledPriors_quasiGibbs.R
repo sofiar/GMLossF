@@ -165,7 +165,7 @@ GompPois_UScaledPriors_quasiGibbs = function(
       #                                                                        #
       ##########################################################################
 
-      U = rgamma(1, shape = phi1, rate = phi2 + 1 / theta2)
+      U = rgamma(1, shape = phi1 + 1, rate = phi2 + 1 / theta2) 
       V = 1 / rgamma(1, shape = 1, rate = 0.5 + beta^2 / (2 * c))
       W = 1 / rgamma(
         1, shape = 0.5 * (nu + 1),

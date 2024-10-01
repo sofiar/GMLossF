@@ -15,14 +15,14 @@ set.seed(1606)
 
 # set paramters
 theta1_s = 1.9244
-theta2_s = 0.4726 ^ 2 # that is 0.2233508
-b_s = c(-0.8, -0.24)
-T = 30
+theta2_s =0.4726 ^ 2  # 3 #0.7095027 ^ 2 #0.4726 ^ 2  
+b_s = c(-0.24)#c(-0.8, -0.24)
+T = 30 #100
 
 a_s = -b_s * theta1_s
 sigmaSq_s = -b_s * (2 + b_s) * theta2_s
 
-niters = 1
+niters = 300 #600
 nsim = 1e+4
 phi1 = 0.5
 phi2 = 0.5
@@ -152,7 +152,7 @@ for (b_curr in b_s) {
                  "nu","c","starter","burn","thin","verbose","keep_output_mm"),
         file = paste(
           "/u/ruizsuar/GMLossF/Rdata/","SimStudy_UscaledPrior", "theta1_", theta1_curr, "___", "theta2_",
-          theta2_curr, "___", "b_", abs(b_curr), ".RData", sep = ""
+          theta2_curr, "___", "b_", abs(b_curr), "n300.RData", sep = "" # '.RData'
         )
       )
       
@@ -161,7 +161,6 @@ for (b_curr in b_s) {
     }
   }
 }
-
 
 
 # if (FALSE) {
