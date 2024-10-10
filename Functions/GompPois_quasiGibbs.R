@@ -27,13 +27,12 @@
 #
 # the priors are
 #
-#     beta ~ logis(0, c)
+#     beta ~ cauchy(0, c)
 #     theta2 ~ invgamma(psi1, psi2)
 #     theta1 | theta2 ~ gauss(eta1, eta2 * theta2)
 #
 # Notice that this implies
 #
-#     if c == 1 then b ~ U(-1, 0)
 #     theta1 ~ student(shape = 2 * psi1, loc = eta1, scale = eta2 * psi2 / psi1)
 #
 # The following scheme is used
@@ -164,7 +163,8 @@ GompPois_quasiGibbs = function(
       #                                                                        #
       ##########################################################################
 
-      V = c(rpostlogiskolmo(1, x = beta / sqrt(c)))
+      #V = c(rpostlogiskolmo(1, x = beta / sqrt(c)))
+      V = 1 / rgamma(1, shape = 1, rate = 0.5 + beta^2 / (2 * c))
 
 
 
