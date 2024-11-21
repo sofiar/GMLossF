@@ -2,7 +2,7 @@
 
 #' @description
 #' Generation of independent draws from Gompertz model with Poisson
-#'  sampling error distribution
+#'  sampling error distribution.
 
 #' @details
 #' This function sample from the following model:

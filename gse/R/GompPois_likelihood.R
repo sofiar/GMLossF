@@ -2,7 +2,7 @@
 
 #' @description
 #' Evaluation of the likelihood for Gompertz model with Poisson
-#'  sampling error distribution
+#'  sampling error distribution.
 
 #' @usage
 #' GompPois_likelihood = function(Nstar, theta1, theta2, b,
@@ -47,8 +47,8 @@
 #' @param nsim The number of simulations for the importance sampling.
 #' @param log If it is true then log-density is returned.
 #' @param details If it is true then also the weights and draws are returned.
-#' @return Likelihood of the arguments and, optionally, weights and draws from
-#' importance sampling.
+#' @return List containing likelihood of the arguments and, optionally, weights
+#'  and draws from importance sampling.
 
 #' @export
 GompPois_likelihood = function(
@@ -207,7 +207,7 @@ GompPois_likelihood = function(
     ))
     # otherwise only the point value of the function
   } else {
-    return(res)
+    return(list(res))
   }
 
 }

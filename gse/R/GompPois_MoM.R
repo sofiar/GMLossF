@@ -2,7 +2,7 @@
 
 #' @description
 #' Point estimator using method of moments for Gompertz model with Poisson
-#'  sampling error distribution
+#'  sampling error distribution.
 
 #' @usage
 #' GompPois_MoM = function(Nstar)

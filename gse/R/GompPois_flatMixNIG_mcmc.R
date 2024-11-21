@@ -4,7 +4,7 @@
 #' @description
 #' Posterior simulation using elliptical slice sampling within Gibbs for
 #'  Gompertz model with Poisson sampling error distribution under flat
-#'  and mixture of normal-inverse gamma priors
+#'  and mixture of normal-inverse gamma priors.
 
 #' @usage
 #' GompPois_flatMixNIG_mcmc = function(nsim, Nstar, kappa, psi1, psi2, nu,
@@ -102,7 +102,7 @@
 #' @param burn The number of draws to be discarded as burn-in.
 #' @param thin The thinning parameter.
 #' @param verbose The period for printing status of the chain.
-#' @return Posterior sample of parameters.
+#' @return Return a matrix containing a posterior sample of the parameters.
 
 #' @export
 GompPois_flatMixNIG_mcmc = function(
@@ -134,7 +134,7 @@ GompPois_flatMixNIG_mcmc = function(
   if (verbose == 0) verbose = nsim + 1
 
   ### check burn
-  if (burn <= 0) burn = 1
+  if (burn < 0) burn = 0
 
 
 
@@ -367,6 +367,8 @@ GompPois_flatMixNIG_mcmc = function(
 
   }
 
+
+
   ### print end time if required
   if (!is.infinite(verbose)) {
     print(
@@ -374,11 +376,13 @@ GompPois_flatMixNIG_mcmc = function(
     )
   }
 
+  ### get results
+  res = matrix(
+    c(keep_theta1, keep_theta2, keep_b), byrow = TRUE,
+    nrow = 3, ncol = nsim, dimnames = list(c("theta1", "theta2", "b"), NULL)
+  )
+
   ### return results
-  return(list(
-    theta1 = keep_theta1,
-    theta2 = keep_theta2,
-    b = keep_b
-  ))
+  return(res)
 
 }
