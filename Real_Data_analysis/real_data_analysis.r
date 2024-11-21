@@ -9,7 +9,7 @@ source('Extrafunctions.R')
 source('mcmc_alg.R')
 
 #load data 
-American_redStart <- read_csv("./Real_Data_analysis/American_redStart2.csv")
+American_redStart = read_csv("./Real_Data_analysis/American_redStart2.csv")
 ggplot(American_redStart)+geom_line(aes(years,redstart))+theme_bw()
 
 # fit model 

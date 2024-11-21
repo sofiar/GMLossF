@@ -1,6 +1,8 @@
 ####### compute composite likelihood using rcpp 
 
-source('./Main_scripts/Extrafunctions.R')
+source_dir = '/u/ruizsuar/GMLossF/Functions'
+
+source('./Functions/Extrafunctions.R')
 
 
 theta1 = 1.9244
@@ -10,7 +12,7 @@ TT=100
 a = -b*theta1
 sigma2 = -b*(b+2)*theta2
 # Simulate process
-Nsims=Simulate_Gompertz(TT=TT,a=a,b=b,sigma2=sigma2)
+Nsims = Simulate_Gompertz(TT=TT,a=a,b=b,sigma2=sigma2)
 
 
 
@@ -18,13 +20,14 @@ Nsims=Simulate_Gompertz(TT=TT,a=a,b=b,sigma2=sigma2)
 Rcpp::sourceCpp('./Functions/GompPois_composite_likelihood.cpp')
 
 system.time(composite_cpp<-GompPois_composite_likelihood_cpp(Nstar=Nsims, theta1=theta1, 
-            theta2=theta2, b=b, nsim=10000,d=3))
+            theta2=theta2, b=b, nsim=10000,d=2))
 
 
 
 system.time(composite_r <- GompPois_composite_likelihood(Nstar=Nsims,theta1,
-                         theta2,b,nsim=10000,d=3)) 
+                         theta2,b,nsim=10000,d=2)) 
 composite_r
+composite_cpp
 exp()
   
 

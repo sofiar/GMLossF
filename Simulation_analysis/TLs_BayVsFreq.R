@@ -21,7 +21,7 @@ T_s = c(30,100,500)#c(30, 100, 500)  # 30  100 - 500
 a_s = -b_s * theta1_s
 sigmaSq_s = -b_s * (2 + b_s) * theta2_s
 
-niters = 1 #600
+niters = 600 #600
 nsim = 1e+4
 
 phi1 = 0.5
@@ -171,3 +171,5 @@ for (T_curr in T_s) {
 #   keep_postMeans[, 1]
 #   keep_time
 # }
+
+# save.image(file='/u/ruizsuar/GMLossF/Rdata/Error_Environment_Oct16.RData')
