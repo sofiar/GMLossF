@@ -1,21 +1,42 @@
-# Gompertz Model with observation Error 
+## Gompertz Model with observation Error 
 
+
+#### Description 
 Stochastic population dynamics models are a crucial component of applied and theoretical ecology. Statistical inference for these models can be challenging, especially when both process error and sampling error are present. Ignoring sampling variability can lead to biased estimations and erroneous conclusions about system behavior. The Gompertz model is widely used to describe the growth of animals, plants, or cells, and it can be adapted to account for sampling variability.
 
 This project aims to develop an inference method for estimating the parameters of the model when sampling error follows a Poisson distribution.
 
+### **Table of Contents**
+- [Installation](#installation)
+- [Quick Start](#quick-start)
 
-This repository contains various folders, each serving a specific purpose. Below is an overview of what you'll find in each folder:
+### **Installation**
 
-### /Main_scripts
-The `/Main_scripts` folder contains the source code of the main project. It includes all files related to the Markov Chain Monte Carlo (MCMC) algorithm and simulation analysis.
+```r
+devtools::install_github("sofiar/GMLossF/gse")
+```
 
-### /Secondary_scripts
-The `/Seconday_scripts` folder contains the source code of the simulation study where we compare the behavior of the profile of the likelihood and the composite likelihood. 
+### **Quick Start**
+```r
+library(gse)
 
-### /Extra_scripts
-The `/Extra_scripts` folder contains additional source code for further analysis, such as processing results or generating plots.
+# simulate model 
+data = GompPois_rng(T = 100, theta1 = 1.92, theta2= 0.22, b =-0.24)
 
-### /Real_Data_analysis
-The `/Real_Data_analysis` folder contains the source code for analyzing the American Redstart data.
-GIT 
+# fit using methods of moments
+GompPois_MoM(data)
+
+# Get posterior simulation using elliptical slice sampling within Gibbs
+# under flat and mixture of normal-inverse gamma priors
+GompPois_flatMixNIG_mcmc(nsim = 1e+4, Nstar = data, kappa = 1, psi1 = 0.5, psi2 =0.5 , 
+                        nu = 2 , zeta1 = 0, zeta2 = 1, starter = NULL, burn = 1,
+                        thin = 1, verbose = +Inf)
+
+# Get posterior simulation using elliptical slice sampling within Gibbs 
+# under flat and normal-inverse gamma priors
+GompPois_flatNIG_mcmc(nsim = 1e+4, Nstar =data , phi1 = 0.5, phi2 = 0.5, 
+                      eta1 = 0, eta2 = 1, starter = NULL, burn = 1, thin = 1,
+                      verbose = +Inf)
+
+
+```
