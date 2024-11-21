@@ -10,7 +10,8 @@ source_dir = '/u/ruizsuar/GMLossF/Functions'
 files = list.files(source_dir, pattern = "\\.R$", full.names = TRUE)
 for (ifun in files) source(ifun)
 
-set.seed(99)
+#set.seed(99)
+set.seed(1606)
 
 # set paramters
 theta1_s = 1.9244
@@ -21,13 +22,13 @@ T = 50
 a_s = -b_s * theta1_s
 sigmaSq_s = -b_s * (2 + b_s) * theta2_s
 
-niters = 1
+niters = 200
 nsim = 1e+4
 phi1 = 0.5
 phi2 = 0.5
 zeta1 = 0
-zeta2 = 100
-nu = 100
+zeta2 = 1
+nu = 2
 c = 2
 starter = NULL
 burn = 1
@@ -75,7 +76,7 @@ for (b_curr in b_s) {
       save(
         list = c("keep_time", "keep_percentiles", "keep_postMeans"),
         file = paste(
-          "/u/ruizsuar/GMLossF/Rdata/","postComp_UscaledPrior_", "theta1_", theta1_curr, "___", "theta2_",
+          "/u/ruizsuar/GMLossF/Rdata/","postComp_UscaledPrior_nu2bis_", "theta1_", theta1_curr, "___", "theta2_",
           theta2_curr, "___", "b_", abs(b_curr), ".RData", sep = ""
         )
       )
@@ -90,3 +91,4 @@ for (b_curr in b_s) {
 #   keep_postMeans[, 1]
 #   keep_time
 # }
+

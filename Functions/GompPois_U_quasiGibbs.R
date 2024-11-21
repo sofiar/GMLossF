@@ -28,16 +28,16 @@
 # the priors are
 #
 #     beta ~ cauchy(0, c)
-#     theta2 ~ invlomax(phi1, phi2)
-#     theta1 | theta2 ~ student-t(nu, zeta1, zeta2 * theta2)
+#     theta2 ~ invgamma(psi1, psi2)
+#     theta1 | theta2 ~ gauss(eta1, eta2 * theta2)
 #
+# Notice that this implies
+#
+#     theta1 ~ student(shape = 2 * psi1, loc = eta1, scale = eta2 * psi2 / psi1)
 #
 # The following scheme is used
 #
-#     (1) sample V, W, U | theta1, theta2, beta
-#         (1.1) sample V | beta (posterior of a logistic Kolmogorov)
-#         (1.2) sample U | theta2 (gamma)
-#         (1.3) sample W | theta1, theta2 (inverse gamma)
+#     (1) sample V | beta (posterior of a logistic Kolmogorov)
 #
 #     (2) for t = 1, 2, ..., T
 #         sample Z_t | Nstar_t, Z_{-t}, beta, theta2, theta1
@@ -49,19 +49,19 @@
 #         (4.1) theta2 | beta, Z ~ invgamma(...)
 #         (4.2) theta1 | theta2, beta, Z ~ gauss(...)
 
-# source("extraFunctions.R")
-# source("GompPois_likelihood.R")
-# source("rpostlogiskolmo.R")
+#source("extraFunctions.R")
+#source("GompPois_likelihood.R")
+#source("rpostlogiskolmo.R")
 
 ############### function
-GompPois_UScaledPriors_quasiGibbs = function(
-  nsim, Nstar, phi1, phi2, nu, zeta1, zeta2, c,
+GompPois_U_quasiGibbs = function(
+  nsim, Nstar, psi1, psi2, eta1, eta2, c,
   starter = NULL, burn = 1, thin = 1, verbose = +Inf
 ) {
 
   # nsim is the number of simulations to be stored;
   # Nstar is the vector of the data, say Nstar_t, t = 1,2,...,T;
-  # phi1, phi2, nu, zeta1, zeta2, c are the prior parameters, see introduction;
+  # psi1, psi2, eta1, eta2, c are the prior parameters, see introduction;
   # starter is a list providing the starter point;
   # burn is the the number of scans to be discarded as burn-in;
   # thin is the thinning parameter;
@@ -89,7 +89,7 @@ GompPois_UScaledPriors_quasiGibbs = function(
 
   ### print start time if required
   if(!is.infinite(verbose)) {
-    print(paste("GompPois_quasiGibbs: start time at ", Sys.time(), sep = ""))
+    print(paste("GompPois_U_quasiGibbs: start time at ", Sys.time(), sep = ""))
   }
 
   ### check verbose
@@ -109,9 +109,9 @@ GompPois_UScaledPriors_quasiGibbs = function(
   if (is.null(starter)) {
     starter = GompPois_MoM(Nstar)
     # check if estimated values belong to the support of the parameters
-    if (starter$theta2 < 0.01) starter$theta2 = 0.01
-    if (starter$b > -0.01) starter$b = -0.01
-    if (starter$b < -0.99) starter$b = -0.99
+    if(starter$theta2 < 0.01) starter$theta2 = 0.01
+    if(starter$b > -0.01) starter$b = -0.01
+    if(starter$b < -0.99) starter$b = -0.99
     # sample Z from importance density
     starter$IS = c(GompPois_likelihood(
       Nstar, theta1 = starter$theta1, theta2 = starter$theta2, b = starter$b,
@@ -132,8 +132,6 @@ GompPois_UScaledPriors_quasiGibbs = function(
   sigmaSq = -b * (2 + b) * theta2
   beta = log(-b / (1 + b))
   V = pi^2 / 3 # just for initialization, it is not used
-  W = 1 # just for initialization, it is not used
-  U = 1 # just for initialization, it is not used
 
 
 
@@ -161,16 +159,12 @@ GompPois_UScaledPriors_quasiGibbs = function(
 
       ##########################################################################
       #                                                                        #
-      #                           update U, V and W                            #
+      #                                update V                                #
       #                                                                        #
       ##########################################################################
 
-      U = rgamma(1, shape = phi1 + 1, rate = phi2 + 1 / theta2) 
+      #V = c(rpostlogiskolmo(1, x = beta / sqrt(c)))
       V = 1 / rgamma(1, shape = 1, rate = 0.5 + beta^2 / (2 * c))
-      W = 1 / rgamma(
-        1, shape = 0.5 * (nu + 1),
-        rate = 0.5 * (nu + (theta1 - zeta1)^2 / (theta2 * zeta2))
-      )
 
 
 
@@ -191,7 +185,7 @@ GompPois_UScaledPriors_quasiGibbs = function(
            mu = a + (1 + b) * Z[T-1]
            tauSq = sigmaSq
         } else {
-           mu = (a + (1 + b) * (Z[t + 1] + Z[t-1] - a)) / (1 + (1 + b)^2)
+           mu = (a + (1 + b) * (Z[t+1] + Z[t-1] - a)) / (1 + (1 + b)^2)
            tauSq = sigmaSq / (1 + (1 + b)^2)
         }
 
@@ -265,21 +259,20 @@ GompPois_UScaledPriors_quasiGibbs = function(
       }
       invB = invB / (1 - (1 + b)^2)
 
-      commonFactor = 1 + W * zeta2 * sum(invB)
+      commonFactor = 1 + eta2 * sum(invB)
       rowSums_invB = c(rowSums(invB)) # it is B^-1 %*% 1_T
-      #matrixQuadForm_theta2 = invB - W * zeta2 * tcrossprod(rowSums_invB) /
+      #matrixQuadForm_theta2 = invB - eta2 * tcrossprod(rowSums_invB) /
       #  commonFactor
 
       theta2 = 1 / rgamma(
-        1, shape = 1 + 0.5 * T, rate = U + 0.5 * emulator::quad.form(
-          invB - W * zeta2 * tcrossprod(rowSums_invB) / commonFactor, Z - zeta1
+        1, shape = psi1 + 0.5 * T, rate = psi2 + 0.5 * emulator::quad.form(
+          invB - eta2 * tcrossprod(rowSums_invB) / commonFactor, Z - eta1
         )
       )
 
       theta1 = rnorm(
-        1, mean = (W * zeta2 * crossprod(rowSums_invB, Z) + zeta1) /
-          commonFactor,
-        sd = sqrt(theta2 * W * zeta2 / commonFactor)
+        1, mean = (eta2 * crossprod(rowSums_invB, Z) + eta1) / commonFactor,
+        sd = sqrt(theta2 * eta2 / commonFactor)
       )
 
       a = -b * theta1
@@ -314,7 +307,7 @@ GompPois_UScaledPriors_quasiGibbs = function(
 
   ### print end time if required
   if (!is.infinite(verbose)) {
-    print(paste("GompPois_quasiGibbs: end time at ", Sys.time(), sep = ""))
+    print(paste("GompPois_U_quasiGibbs: end time at ", Sys.time(), sep = ""))
   }
 
   ### return results
@@ -337,15 +330,10 @@ if (FALSE) { # appendix script is not run
   # debugging
   {
     rm(list = ls()); gc(); cat("\14")
-    setwd(paste(
-      "/home/paolo/Desktop/PostDoc_Sapienza/VisitingToronto2023/",
-      "AnimalMovement/codes/GMLossF-main_paolo/Functions/", sep = ""
-    ))
-    source("GompPois_ScaledPriors_quasiGibbs.R")
-    source("extraFunctions.R")
+    source("GompPois_quasiGibbs.R")
     set.seed(1994)
     nsim = 1e+4
-    T = 250
+    T = 50
     theta1 = 1.9244
     theta2 = 0.4726 ^ 2 # that is 0.2233508
     b = -0.8 # -0.24
@@ -353,26 +341,24 @@ if (FALSE) { # appendix script is not run
     Nstar = GompPois_simulate(T, theta1 = theta1, theta2 = theta2, b = b)
     rm(list = c("T", "theta1", "theta2", "b"))
 
-    phi1 = 0.5
-    phi2 = 0.5
-    nu = 1
-    zeta1 = 0
-    zeta2 = 1
+    psi1 = 0.01
+    psi2 = 0.01
+    eta1 = 0
+    eta2 = 100
     c = 1
     starter = NULL
     burn = 1
     thin = 1
     verbose = 100
     start_time = Sys.time()
-    res = GompPois_ScaledPriors_quasiGibbs(
-      nsim, Nstar = Nstar, phi1 = phi1, phi2 = phi2, nu = nu, zeta1 = zeta1,
-      zeta2 = zeta2, c = c, starter = starter, burn = burn, thin = thin,
-      verbose = verbose
+    res = GompPois_U_quasiGibbs(
+      nsim, Nstar = Nstar, psi1 = psi1, psi2 = psi2, eta1 = eta1, eta2 = eta2,
+      c = c, starter = starter, burn = burn, thin = thin, verbose = verbose
     )
     end_time = Sys.time()
   }
 
-  difftime(end_time, start_time)
+  #difftime(end_time, start_time)
 
   mean(res$theta1)
   mean(res$theta2)
@@ -419,5 +405,4 @@ if (FALSE) { # appendix script is not run
   B2 = chol2inv(chol(invB2))
   B2[1:3, 1:3]
   B[1:3, 1:3]
-
 }
