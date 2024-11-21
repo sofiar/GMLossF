@@ -160,7 +160,7 @@ GompPois_composite_likelihood=function(Nstar,theta1,theta2,b,nsim,
     for (t2 in (t1+1):limit) {
       B = (1+b)^(abs(outer(c(1,abs(t2-t1+1)),c(1,abs(t2-t1+1)) , "-"))) 
       cov_matrix=theta2*B
-      N.sample = exp(mvrnorm(nsim, mu = mu, Sigma = cov_matrix))
+      N.sample = exp(MASS::mvrnorm(nsim, mu = mu, Sigma = cov_matrix))
       logval = colSums(dpois(Nstar[c(t1,t2)],t(N.sample),log=TRUE))
       curr = curr-log(nsim) + log( sum(exp(logval)))
     }    
