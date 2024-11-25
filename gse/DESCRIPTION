@@ -2,7 +2,7 @@ Package: gse
 Title: Gompertz Model with Sampling Error
 Version: 0.0.0.9000
 Authors@R: 
-    c(person("Paolo", "Onorati", role=c("aut","cre")),
+    c(person("Paolo", "Onorati", role=c("aut","cre"), email = "paolo.onorati@unipd.it"),
       person("Sofia", "Ruiz Suarez", role="aut"),
       person("Radu", "Craiu", role="aut"))
 Description: Implementation of the Gompertz model with sampling error: random number generator and inference under frequentist and Bayesian approaches.
