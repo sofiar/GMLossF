@@ -7,7 +7,7 @@ Normal-Inverse Gamma Prior: Markov Chain Monte Carlo Algorithm}
 \usage{
 GompPois_flatNIG_mcmc = function(nsim, Nstar, phi1, phi2, eta1, eta2,
                                  starter = NULL, burn = 1, thin = 1,
-                                 verbose = +Inf)
+                                 verbose = +Inf, lastZ = FALSE)
 }
 \arguments{
 \item{nsim}{The number of complete scans.}
@@ -29,14 +29,18 @@ GompPois_flatNIG_mcmc = function(nsim, Nstar, phi1, phi2, eta1, eta2,
 \item{thin}{The thinning parameter.}
 
 \item{verbose}{The period for printing status of the chain.}
+
+\item{lastZ}{Logical, if true the last value of Z is reported.}
 }
 \value{
-Posterior sample of parameters.
+Return a matrix containing a posterior sample of the parameters or a
+list containing the matrix of posterior sample and vector of last
+value of Z.
 }
 \description{
 Posterior simulation using elliptical slice sampling within Gibbs for
 Gompertz model with Poisson sampling error distribution under flat
-and normal-inverse gamma priors
+and normal-inverse gamma priors.
 }
 \details{
 This function sample from the posterior distribution of the following model:

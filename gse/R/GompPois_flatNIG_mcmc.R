@@ -9,7 +9,7 @@
 #' @usage
 #' GompPois_flatNIG_mcmc = function(nsim, Nstar, phi1, phi2, eta1, eta2,
 #'                                  starter = NULL, burn = 1, thin = 1,
-#'                                  verbose = +Inf)
+#'                                  verbose = +Inf, lastZ = FALSE)
 
 #' @details
 #' This function sample from the posterior distribution of the following model:
@@ -88,12 +88,15 @@
 #' @param burn The number of draws to be discarded as burn-in.
 #' @param thin The thinning parameter.
 #' @param verbose The period for printing status of the chain.
-#' @return Return a matrix containing a posterior sample of the parameters.
+#' @param lastZ Logical, if true the last value of Z is reported.
+#' @return Return a matrix containing a posterior sample of the parameters or a
+#'         list containing the matrix of posterior sample and vector of last
+#'         value of Z.
 
 #' @export
 GompPois_flatNIG_mcmc = function(
   nsim, Nstar, phi1, phi2, eta1, eta2, starter = NULL,
-  burn = 1, thin = 1, verbose = +Inf
+  burn = 1, thin = 1, verbose = +Inf, lastZ = FALSE
 ) {
 
   #--------------
@@ -340,6 +343,13 @@ GompPois_flatNIG_mcmc = function(
   )
 
   ### return results
-  return(res)
+  if (lastZ == FALSE) {
+    return(res)
+  } else {
+    return(list(
+      sample = res,
+      lastZ = Z
+    ))
+  }
 
 }

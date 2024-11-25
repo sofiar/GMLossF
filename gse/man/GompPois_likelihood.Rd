@@ -25,12 +25,12 @@ be computed.}
 \item{details}{If it is true then also the weights and draws are returned.}
 }
 \value{
-Likelihood of the arguments and, optionally, weights and draws from
-importance sampling.
+List containing likelihood of the arguments and, optionally, weights
+and draws from importance sampling.
 }
 \description{
 Evaluation of the likelihood for Gompertz model with Poisson
-sampling error distribution
+sampling error distribution.
 }
 \details{
 This function computes the likelihood for the following model:

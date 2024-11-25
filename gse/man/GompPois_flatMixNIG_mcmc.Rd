@@ -38,12 +38,12 @@ prior.}
 \item{verbose}{The period for printing status of the chain.}
 }
 \value{
-Posterior sample of parameters.
+Return a matrix containing a posterior sample of the parameters.
 }
 \description{
 Posterior simulation using elliptical slice sampling within Gibbs for
 Gompertz model with Poisson sampling error distribution under flat
-and mixture of normal-inverse gamma priors
+and mixture of normal-inverse gamma priors.
 }
 \details{
 This function sample from the posterior distribution of the following model:
