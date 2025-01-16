@@ -32,7 +32,7 @@
 #' }
 #' The priors are:
 #' \deqn{
-#'  b \sim U(-1, 0) \, , \\
+#'  b \sim U(-2, 0) \, , \\
 #'  U \sim Gamma(\psi_1, \psi_2) \, , \\
 #'  W \sim Inv.Gamma(\nu/2, \nu/2) \, , \\
 #'  \theta_2 \vert U \sim Inv.Gamma(\kappa, U) \, , \\
@@ -43,7 +43,7 @@
 #'  \theta_2 \sim Comp.Gamma(\psi_1, \kappa, \psi_2) \, , \,
 #'  \theta_1 \vert \theta_2 \sim Student(\nu, \zeta_1, \zeta_2 \theta_2) \, .
 #' }
-#' Setting \eqn{\beta = \log(-b / (1 + b))}, it is obtained \eqn{\beta \sim
+#' Setting \eqn{\beta = \log(-b / (2 + b))}, it is obtained \eqn{\beta \sim
 #' Logis(0, 1)}, that is \eqn{\beta \vert V \sim N(0, V)} and \eqn{V} is a
 #' logistic Kolmogorov distribution (four times the square of a Kolmogorov
 #' distribution). The following updating scheme is used:
@@ -149,7 +149,7 @@ GompPois_flatMixNIG_mcmc = function(
     # check if estimated values belong to the support of the parameters
     if (starter$theta2 < 0.01) starter$theta2 = 0.01
     if (starter$b > -0.01) starter$b = -0.01
-    if (starter$b < -0.99) starter$b = -0.99
+    if (starter$b < -1.99) starter$b = -1.99
     # sample Z from importance density
     starter$IS = c(GompPois_likelihood(
       Nstar, theta1 = starter$theta1, theta2 = starter$theta2, b = starter$b,
@@ -168,7 +168,7 @@ GompPois_flatMixNIG_mcmc = function(
 
   a = -b * theta1
   sigmaSq = -b * (2 + b) * theta2
-  beta = log(-b / (1 + b))
+  beta = log(-b / (2 + b))
   # set V, U, and W just for initialization, they are not used
   V = pi^2 / 3
   U = 1
@@ -289,7 +289,7 @@ GompPois_flatMixNIG_mcmc = function(
 
       while (TRUE) {
         betaProp = beta * cos(delta) + betaTilde * sin(delta)
-        bProp = -1 / (1 + exp(-betaProp))
+        bProp = -2 / (1 + exp(-betaProp))
         loglike_bProp = sub_Gomp_loglike_b(
           bProp, Z = Z, theta1 = theta1, theta2 = theta2
         )
@@ -357,6 +357,16 @@ GompPois_flatMixNIG_mcmc = function(
 
       ### print status of the chain
       if (insim %% verbose == 0) {
+        print(paste(
+          "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
+          sep = ""
+        ))
+      }
+
+    } else {
+
+      ### print status of the chain during burn-in
+      if ((insim + burn) %% verbose == 0) {
         print(paste(
           "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
           sep = ""

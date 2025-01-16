@@ -66,7 +66,7 @@ which implies
 }
 The priors are:
 \deqn{
- b \sim U(-1, 0) \, , \\
+ b \sim U(-2, 0) \, , \\
  U \sim Gamma(\psi_1, \psi_2) \, , \\
  W \sim Inv.Gamma(\nu/2, \nu/2) \, , \\
  \theta_2 \vert U \sim Inv.Gamma(\kappa, U) \, , \\
@@ -77,7 +77,7 @@ This implies
  \theta_2 \sim Comp.Gamma(\psi_1, \kappa, \psi_2) \, , \,
  \theta_1 \vert \theta_2 \sim Student(\nu, \zeta_1, \zeta_2 \theta_2) \, .
 }
-Setting \eqn{\beta = \log(-b / (1 + b))}, it is obtained \eqn{\beta \sim
+Setting \eqn{\beta = \log(-b / (2 + b))}, it is obtained \eqn{\beta \sim
 Logis(0, 1)}, that is \eqn{\beta \vert V \sim N(0, V)} and \eqn{V} is a
 logistic Kolmogorov distribution (four times the square of a Kolmogorov
 distribution). The following updating scheme is used:

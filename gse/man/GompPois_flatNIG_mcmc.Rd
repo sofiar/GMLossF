@@ -63,7 +63,7 @@ which implies
 }
 The priors are:
 \deqn{
- b \sim U(-1, 0) \, , \\
+ b \sim U(-2, 0) \, , \\
  \theta_2 \sim Inv.Gamma(\phi_1, \phi_2) \, , \\
  \theta_1 \vert \theta_2 \sim N(\eta_1, \eta_2 \theta_2) \, .
 }

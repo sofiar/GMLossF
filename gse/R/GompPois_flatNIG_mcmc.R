@@ -32,7 +32,7 @@
 #' }
 #' The priors are:
 #' \deqn{
-#'  b \sim U(-1, 0) \, , \\
+#'  b \sim U(-2, 0) \, , \\
 #'  \theta_2 \sim Inv.Gamma(\phi_1, \phi_2) \, , \\
 #'  \theta_1 \vert \theta_2 \sim N(\eta_1, \eta_2 \theta_2) \, .
 #' }
@@ -136,7 +136,7 @@ GompPois_flatNIG_mcmc = function(
     # check if estimated values belong to the support of the parameters
     if (starter$theta2 < 0.01) starter$theta2 = 0.01
     if (starter$b > -0.01) starter$b = -0.01
-    if (starter$b < -0.99) starter$b = -0.99
+    if (starter$b < -1.99) starter$b = -1.99
     # sample Z from importance density
     starter$IS = c(GompPois_likelihood(
       Nstar, theta1 = starter$theta1, theta2 = starter$theta2, b = starter$b,
@@ -155,7 +155,7 @@ GompPois_flatNIG_mcmc = function(
 
   a = -b * theta1
   sigmaSq = -b * (2 + b) * theta2
-  beta = log(-b / (1 + b))
+  beta = log(-b / (2 + b))
   V = pi^2 / 3 # just for initialization, it is not used
 
 
@@ -250,7 +250,7 @@ GompPois_flatNIG_mcmc = function(
 
       while (TRUE) {
         betaProp = beta * cos(delta) + betaTilde * sin(delta)
-        bProp = -1 / (1 + exp(-betaProp))
+        bProp = -2 / (1 + exp(-betaProp))
         loglike_bProp = sub_Gomp_loglike_b(
           bProp, Z = Z, theta1 = theta1, theta2 = theta2
         )
@@ -319,6 +319,16 @@ GompPois_flatNIG_mcmc = function(
 
       ### print status of the chain
       if (insim %% verbose == 0) {
+        print(paste(
+          "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
+          sep = ""
+        ))
+      }
+
+    } else {
+
+      ### print status of the chain during burn-in
+      if ((insim + burn) %% verbose == 0) {
         print(paste(
           "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
           sep = ""

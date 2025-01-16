@@ -86,7 +86,7 @@ GompPois_stEM_mle = function(
     # check if estimated values belong to the support of the parameters
     if (starter$theta2 < 0.01) starter$theta2 = 0.01
     if (starter$b > -0.01) starter$b = -0.01
-    if (starter$b < -0.99) starter$b = -0.99
+    if (starter$b < -1.99) starter$b = -1.99
   }
 
   ### initialize parameter values
@@ -193,7 +193,7 @@ GompPois_stEM_mle = function(
       ) - 1
 
       ### check if bounds are respected
-      if (bCMLE < -0.99) bCMLE = -0.99
+      if (bCMLE < -1.99) bCMLE = -1.99
       if (bCMLE > -0.01) bCMLE = -0.01
 
       b = tryCatch(
@@ -222,7 +222,7 @@ GompPois_stEM_mle = function(
                 b, Z = Z, theta1 = theta1MLE, theta2 = theta2MLE
               ))
             },
-            method = "L-BFGS-B", lower = -1, upper = 0.01
+            method = "L-BFGS-B", lower = -1.99, upper = 0.01
           )$par
         },
         error = function(err) return(bCMLE)
@@ -263,6 +263,16 @@ GompPois_stEM_mle = function(
 
       ### print status of the chain
       if (insim %% verbose == 0) {
+        print(paste(
+          "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
+          sep = ""
+        ))
+      }
+
+    } else {
+
+      ### print status of the chain during burn-in
+      if ((insim + burn) %% verbose == 0) {
         print(paste(
           "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
           sep = ""

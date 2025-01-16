@@ -2,11 +2,11 @@
 #'  Expectation Maximization: Empirical Bayes
 
 #' @description
-#' Calibration of hyper-parameters of the NIG prior for Gompertz model with
+#'  Calibration of hyper-parameters of the NIG prior for Gompertz model with
 #'  Poisson sampling error distribution using stochastic EM algorithm.
 
 #' @usage
-#' GompPois_stEM_eb = function(nsim, Nstar, starter = NULL, burn = 1e+3,
+#' GompPois_stEM_eb = function(nsim, Nstar, starter = NULL, burn = 0,
 #'                             thin = 1, verbose = +Inf)
 
 #' @details
@@ -31,7 +31,7 @@
 #' }
 #' The priors are:
 #' \deqn{
-#'  b \sim U(-1, 0) \, , \\
+#'  b \sim U(-2, 0) \, , \\
 #'  \theta_2 \sim Inv.Gamma(\phi_1, \phi_2) \, , \\
 #'  \theta_1 \vert \theta_2 \sim N(\eta_1, \eta_2 \theta_2) \, .
 #' }
@@ -39,25 +39,28 @@
 #' Logis(0, 1)}, that is \eqn{\beta \vert V \sim N(0, V)} and \eqn{V} is a
 #' logistic Kolmogorov distribution (four times the square of a Kolmogorov
 #' distribution).
-#' Thus, a stochastic expectation maximization algorithm is used to calibrate
-#' \eqn{\phi_1, \phi_2, \eta_1, \eta_2}.
-#' See [INSERT REFERENCE] for more details.
+#' The values of \eqn{\phi_1} and \eqn{\eta_1} are kept fixed while a stochastic
+#' expectation maximization algorithm is used to calibrate \eqn{\phi_2, \eta_2}.
 
 #' @references
 #' [INSERT REFERENCE]
 
 #' @param nsim The number of simulations for the Markov chain.
 #' @param Nstar The vector of the data.
+#' @param phi1 The fixed value of shape parameter of inverse gamma prior.
+#' @param eta1 The fixed value of location parameter of normal prior.
 #' @param starter List for starting point.
 #' @param burn The number of draws to be discarded as burn-in.
 #' @param thin The thinning parameter.
 #' @param verbose The period for printing status of the chain.
-#' @return Return a matrix containing a sequence of optimizers of the
-#'         parameters.
+#' @param includeMCMC If it is true then MCMC output is included.
+#' @return Return a list containing the mean of the sequence of optimizers for
+#'         scale parameters and fixed values of shape and location parameters.
 
 #' @export
 GompPois_stEM_eb = function(
-  nsim, Nstar, starter = NULL, burn = 1e+3, thin = 1, verbose = +Inf
+  nsim, Nstar, phi1, eta1, starter = NULL, burn = 0,
+  thin = 1, verbose = +Inf, includeMCMC = FALSE
 ) {
 
   ### print start time if required
@@ -70,6 +73,9 @@ GompPois_stEM_eb = function(
 
   ### check burn
   if (burn < 0) burn = 0
+
+  ### store last iteration from optim
+  last_params = double(2)
 
 
 
@@ -84,7 +90,7 @@ GompPois_stEM_eb = function(
   # check if estimated values belong to the support of the parameters
   if (res_MoM$theta2 < 0.01) starter$theta2 = 0.01
   if (res_MoM$b > -0.01) starter$b = -0.01
-  if (res_MoM$b < -0.99) starter$b = -0.99
+  if (res_MoM$b < -1.99) starter$b = -1.99
 
 
 
@@ -98,21 +104,16 @@ GompPois_stEM_eb = function(
     starter$theta2 = res_MoM$theta2
     starter$b = res_MoM$b
 
-    # get starting points of hyper-parameters from MoM estimates ### TO BE CHANGED WITH APPROPRIATE FORMULA FOR CORRELATED DATA
-    starter$eta1 = starter$theta1
-    starter$eta2 = 1 / T
-    starter$phi1 = 0.5 * (T - 1)
-    starter$phi2 = 0.5 * (T - 1) / starter$theta2
+    # get starting points of hyper-parameters using MLE and MoM value as data
+    starter$eta2 = (starter$theta1 - eta1)^2 / starter$theta2
+    starter$phi2 = starter$theta2 * (phi1 + 1)
   }
 
   ### initialize parameter values
   theta1 = starter$theta1
   theta2 = starter$theta2
   b = starter$b
-
-  phi1 = starter$phi1
   phi2 = starter$phi2
-  eta1 = starter$eta1
   eta2 = starter$eta2
 
   a = -b * theta1
@@ -133,10 +134,8 @@ GompPois_stEM_eb = function(
 
 
   ### storing vectors
-  keep_eta1 = double(nsim)
-  keep_eta2 = double(nsim)
-  keep_phi1 = double(nsim)
   keep_phi2 = double(nsim)
+  keep_eta2 = double(nsim)
 
 
 
@@ -203,7 +202,7 @@ GompPois_stEM_eb = function(
 
       ##########################################################################
       #                                                                        #
-      #                  optimize phi1, phi2, eta1, and eta2                   #
+      #                         optimize phi2 and eta2                         #
       #                                                                        #
       ##########################################################################
 
@@ -211,29 +210,29 @@ GompPois_stEM_eb = function(
       opt_obj = tryCatch(
         expr = {
           optim(
-            par = c(phi1, phi2, eta1, eta2),
+            par = c(phi2, eta2),
             fn = function(xfun) {
+              # current best params
+              last_params <<- xfun
               - (
-                lgamma(xfun[1] + 0.5 * T) - lgamma(xfun[1]) -
-                  0.5 * T * log(xfun[2]) - 0.5 * log(1 + xfun[4] * sum_invB) -
-                  (xfun[1] + 0.5 * T) * log(1 + 0.5 * quad_form(
-                    invB - xfun[4] * invB_ones_sq / (1 + xfun[4] * sum_invB),
-                    Z - xfun[3]
-                  ) / xfun[2])
+                lgamma(phi1 + 0.5 * T) - lgamma(phi1) -
+                  0.5 * T * log(xfun[1]) - 0.5 * log(1 + xfun[2] * sum_invB) -
+                  (phi1 + 0.5 * T) * log(1 + 0.5 * quad_form(
+                    invB - xfun[2] * invB_ones_sq / (1 + xfun[2] * sum_invB),
+                    Z - eta1
+                  ) / xfun[1])
               )
             },
             method = "L-BFGS-B",
-            lower = c(0.01, 0.01, -Inf, 0.01), upper = rep(+Inf, 4)
+            lower = c(0.01, 0.01), upper = rep(+Inf, 2)
           )
         },
-        error = function(err) return(bCMLE)
+        error = function(err) return(list(par = last_params))
       )
 
       ### get values
-      phi1 = opt_obj$par[1]
-      phi2 = opt_obj$par[2]
-      eta1 = opt_obj$par[3]
-      eta2 = opt_obj$par[4]
+      phi2 = opt_obj$par[1]
+      eta2 = opt_obj$par[2]
 
 
 
@@ -246,13 +245,21 @@ GompPois_stEM_eb = function(
     if (insim > 0) {
 
       ### keep values
-      keep_eta1[insim] = eta1
-      keep_eta2[insim] = eta2
-      keep_phi1[insim] = phi1
       keep_phi2[insim] = phi2
+      keep_eta2[insim] = eta2
 
       ### print status of the chain
       if (insim %% verbose == 0) {
+        print(paste(
+          "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
+          sep = ""
+        ))
+      }
+
+    } else {
+
+      ### print status of the chain during burn-in
+      if ((insim + burn) %% verbose == 0) {
         print(paste(
           "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
           sep = ""
@@ -271,14 +278,24 @@ GompPois_stEM_eb = function(
   }
 
   ### get results
-  res = matrix(
-    c(keep_eta1, keep_eta2, keep_phi1, keep_phi2), byrow = TRUE,
-    nrow = 4, ncol = nsim, dimnames = list(
-      c("eta1", "eta2", "phi1", "phi2"), NULL
+  res_mcmc = matrix(
+    c(keep_phi2, keep_eta2), byrow = TRUE,
+    nrow = 2, ncol = nsim, dimnames = list(
+      c("phi2", "eta2"), NULL
     )
   )
 
+  res = rowMeans(res_mcmc)
+  names(res) = NULL
+
   ### return results
-  return(res)
+  if (includeMCMC) {
+    return(list(
+      phi1 = phi1, phi2 = res[1], eta1 = eta1, eta2 = res[2],
+      mcmc_sample = res_mcmc
+    ))
+  } else {
+    return(list(phi1 = phi1, phi2 = res[1], eta1 = eta1, eta2 = res[2]))
+  }
 
 }

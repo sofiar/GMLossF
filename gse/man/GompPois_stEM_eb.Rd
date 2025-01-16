@@ -5,13 +5,17 @@
 \title{Gompertz Model with Poisson Sampling Error with Stochastic
 Expectation Maximization: Empirical Bayes}
 \usage{
-GompPois_stEM_eb = function(nsim, Nstar, starter = NULL, burn = 1e+3,
+GompPois_stEM_eb = function(nsim, Nstar, starter = NULL, burn = 0,
                             thin = 1, verbose = +Inf)
 }
 \arguments{
 \item{nsim}{The number of simulations for the Markov chain.}
 
 \item{Nstar}{The vector of the data.}
+
+\item{phi1}{The fixed value of shape parameter of inverse gamma prior.}
+
+\item{eta1}{The fixed value of location parameter of normal prior.}
 
 \item{starter}{List for starting point.}
 
@@ -20,10 +24,12 @@ GompPois_stEM_eb = function(nsim, Nstar, starter = NULL, burn = 1e+3,
 \item{thin}{The thinning parameter.}
 
 \item{verbose}{The period for printing status of the chain.}
+
+\item{includeMCMC}{If it is true then MCMC output is included.}
 }
 \value{
-Return a matrix containing a sequence of optimizers of the
-parameters.
+Return a list containing the mean of the sequence of optimizers for
+scale parameters and fixed values of shape and location parameters.
 }
 \description{
 Calibration of hyper-parameters of the NIG prior for Gompertz model with
@@ -51,7 +57,7 @@ which implies
 }
 The priors are:
 \deqn{
- b \sim U(-1, 0) \, , \\
+ b \sim U(-2, 0) \, , \\
  \theta_2 \sim Inv.Gamma(\phi_1, \phi_2) \, , \\
  \theta_1 \vert \theta_2 \sim N(\eta_1, \eta_2 \theta_2) \, .
 }
@@ -59,9 +65,8 @@ Setting \eqn{\beta = \log(-b / (1 + b))}, it is obtained \eqn{\beta \sim
 Logis(0, 1)}, that is \eqn{\beta \vert V \sim N(0, V)} and \eqn{V} is a
 logistic Kolmogorov distribution (four times the square of a Kolmogorov
 distribution).
-Thus, a stochastic expectation maximization algorithm is used to calibrate
-\eqn{\phi_1, \phi_2, \eta_1, \eta_2}.
-See \link{INSERT REFERENCE} for more details.
+The values of \eqn{\phi_1} and \eqn{\eta_1} are kept fixed while a stochastic
+expectation maximization algorithm is used to calibrate \eqn{\phi_2, \eta_2}.
 }
 \references{
 \link{INSERT REFERENCE}
