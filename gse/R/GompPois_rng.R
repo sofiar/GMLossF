@@ -37,7 +37,7 @@
 #' @return A vector containing the noised chain.
 
 #' @export
-GompPois_rng = function(T, theta1, theta2, b) {t
+GompPois_rng = function(T, theta1, theta2, b) {
 
   ### initialize result object
   res = double(T)

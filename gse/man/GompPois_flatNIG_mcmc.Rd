@@ -6,7 +6,7 @@
 Normal-Inverse Gamma Prior: Markov Chain Monte Carlo Algorithm}
 \usage{
 GompPois_flatNIG_mcmc = function(nsim, Nstar, phi1, phi2, eta1, eta2,
-                                 starter = NULL, burn = 1, thin = 1,
+                                 starter = NULL, burn = 0, thin = 1,
                                  verbose = +Inf, lastZ = FALSE)
 }
 \arguments{

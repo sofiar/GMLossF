@@ -32,7 +32,11 @@ model {
   b ~ uniform(-2, 0);
     
   // Likelihood
-  log(N) ~ multi_normal(mu, Sigma);
+  log(N[1]) ~ normal(theta1, sqrt(theta2));
+  
+  for (t in 2:M) {
+    log(N[t]) ~ normal(-b*theta1 + (1+b)*log(N[t-1]), sqrt(-b*(2+b)*theta2));
+  }
   
   for(i in 1:M){
     Nstar[i] ~ poisson(N[i]);

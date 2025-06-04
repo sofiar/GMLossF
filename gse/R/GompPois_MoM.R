@@ -28,7 +28,7 @@
 #' }
 #' The method of moments is used. In particular, the parameters are estimated
 #' such that the mean, variance, and autocovariance at lag 1 are matched to the
-#' empirical one.
+#' empirical ones.
 
 #' @references
 #' [INSERT REFERENCE]

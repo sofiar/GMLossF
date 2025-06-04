@@ -82,24 +82,31 @@ lambertW_expArg = function(x) {
 
 
 ################################################################################
-GompLognorm_rng = function(TT, a, b, sigma2, tau2) {
+# GompLognorm_rng = function(T, theta1, theta2, b, tauSq) {
 
-  # Simulation Gompertz with log normal error
+#   ### initialize result object
+#   res = double(T)
 
-  Y = numeric(TT)
-  mu = -a / b
-  var = sigma2 / (1 - ((1 + b)^2)) + tau2
-  Y[1] = rnorm(1, mu, sqrt(var))
+#   ### get the intercept
+#   a = -b * theta1
 
-  for (i in 2:length(Y)) {
-    mu = a + (1 + b) * (mu + (var - tau2) / var * (Y[i - 1] - mu))
-    var = (1 + b)^2 * (var - tau2) / var * tau2 + sigma2 + tau2
-    Y[i] = rnorm(1, mu, sqrt(var))
-  }
+#   ### get the conditional variance
+#   sigmaSq = -b * (2 + b) * theta2
 
-  return(exp(Y))
+#   ### sample the first draw from the stationary distribution
+#   res[1] = theta1 + sqrt(theta2) * rnorm(1)
 
-}
+#   ### sample the remaining draws from the conditional distribution
+#   for (t in 2:T) {
+#     res[t] = a + (1 + b) * res[t - 1] + sqrt(sigmaSq) * rnorm(1)
+#   }
+
+#   ## sample observed variables from Poisson
+#   res = rpois(T, lambda = exp(res))
+
+#   return(res)
+
+# }
 ################################################################################
 
 
@@ -196,4 +203,183 @@ log_proposalGauss = function(x, tauSq, xi) {
 
 ################################################################################
 quad_form = function(M, x) drop(crossprod(M %*% x, x))
+################################################################################
+
+
+
+################################################################################
+logt_kernel_b = function(w, b, eta2, phi1, phi2, T) {
+  r = 1 + b
+  sumS_wsq = sum(w[-c(1, T)]^2)
+  sumH_Lww = sum(w[-T] * w[-1])
+  sumT_wsq = sumS_wsq + sum(w[c(1, T)]^2)
+  sumSsq_w = sum(w[-c(1, T)])^2
+  sumST_w = sum(w[-c(1, T)]) * sum(w)
+  sumTsq_w = sum(w)^2
+  rsq = r^2
+  quad_eq_no_w = rsq * (eta2 * (T - 2) - 1) - 2 * r * eta2 * (T - 1) +
+    eta2 * T + 1
+  (1 - 0.5 * T) * log1p(-rsq) - 0.5 * log1p(quad_eq_no_w - 1) -
+    (phi1 + 0.5 * T) * log1p(
+      (rsq * sumS_wsq - 2 * r * sumH_Lww + sumT_wsq) / (2 * phi2 * (1 - rsq)) -
+        (eta2 * (1 - rsq) * (rsq * sumSsq_w - 2 * r * sumST_w + sumTsq_w)) / (
+          (1 + r)^2 * 2 * phi2 * quad_eq_no_w
+        )
+    )
+}
+################################################################################
+
+
+
+################################################################################
+logGauss_kernel_theta = function(z, b, theta1, theta2, T = length(z)) {
+  colSums(rbind(
+    c(dnorm(z[1, ], mean = theta1, sd = sqrt(theta2), log = TRUE)),
+    dnorm(
+      x = z[2:T, ], mean = -b * theta1 + (1 + b) * z[1:(T - 1), ],
+      sd = sqrt(-b * (2 + b) * theta2), log = TRUE
+    )
+  ))
+}
+################################################################################
+
+
+
+################################################################################
+logt_kernel_b2 = function(w, b, eta2, phi1, phi2, T) {
+  invB = matrix(0, nrow = T, ncol = T)
+  invB[1, 1] = 1
+  invB[1, 2] = -(1 + b)
+  invB[2, 1] = -(1 + b)
+  invB[T, T] = 1
+  for (t in 2:(T - 1)) {
+    invB[t, t] = 1 + (1 + b)^2
+    invB[t, t + 1] = -(1 + b)
+    invB[t + 1, t] = -(1 + b)
+  }
+  invB = invB / (1 - (1 + b)^2)
+  logdetB = (T - 1) * log1p(-(1 + b)^2)
+  suminvB = sum(invB)
+  rowSums_invB = c(rowSums(invB)) # it is B^-1 %*% 1_T
+
+  drop(
+    -0.5 * (logdetB + log1p(eta2 * suminvB)) - (phi1 + 0.5 * T) * log1p(
+      0.5 * quad_form(invB, w) / phi2 - eta2 / (1 + eta2 * suminvB) * (
+        (t(w) %*% rowSums_invB)^2
+      ) / (2 * phi2)
+    )
+  )
+}
+################################################################################
+
+
+
+################################################################################
+logt_kernel_b3 = function(w, b, eta2, phi1, phi2, T) {
+  res = -0.5 * determinant(
+    eta2 * matrix(1, nrow = T, ncol = T) +
+      BayesRGMM::AR1.cor(n = T, rho = 1 + b),
+    logarithm = TRUE
+  )$modulus - 0.5 * (2 * phi1 + T) * log1p(
+    0.5 / phi2 * t(w) %*% chol2inv(chol(
+      eta2 * matrix(1, nrow = T, ncol = T) +
+        BayesRGMM::AR1.cor(n = T, rho = 1 + b)
+    )) %*% (w)
+  )
+  attributes(res) = NULL
+  res
+}
+################################################################################
+
+
+
+################################################################################
+ellipSlice_b = function(b, sub_nsim, Z, eta1, eta2, phi1, phi2, T) {
+  beta = log(- b / (2 + b))
+  for (isub_nsim in 1:sub_nsim) {
+    V = c(rpostlogiskolmo(1, x = beta))
+    strike = logt_kernel_b(
+      w = Z - eta1, b = b, eta2 = eta2, phi1 = phi1, phi2 = phi2, T = T
+    ) - rexp(n = 1, rate = 1)
+    delta = runif(1, min = 0, max = 2 * pi)
+    delta_min = delta - 2 * pi
+    delta_max = delta
+    betaTilde = sqrt(V) * rnorm(1)
+    while (TRUE) {
+      betaProp = beta * cos(delta) + betaTilde * sin(delta)
+      bProp = -2 / (1 + exp(-betaProp))
+      loglike_bProp = logt_kernel_b(
+        w = Z - eta1, b = bProp, eta2 = eta2, phi1 = phi1, phi2 = phi2, T = T
+      )
+      if (loglike_bProp >= strike) {
+        beta = betaProp
+        b = bProp
+        break
+      } else {
+        if (delta < 0) delta_min = delta else delta_max = delta
+        delta = runif(1, min = delta_min, max = delta_max)
+      }
+    }
+  }
+  return(b)
+}
+################################################################################
+
+
+################################################################################
+GompPois_mcmc_Z = function(nsim, T, Nstar, theta1, theta2, b) {
+
+  mcmc_sample = matrix(nrow = T, ncol = nsim)
+  a = -b * theta1
+  sigmaSq = -b * (2 + b) * theta2
+
+  # sample Z from importance density
+  IS_obj = c(GompPois_likelihood(
+    Nstar, theta1 = theta1, theta2 = theta2, b = b,
+    nsim = 1e+4, log = TRUE, details = TRUE
+  ))
+  Z = IS_obj$Z[, sample(
+    c(1:1e+4), size = 1, replace = FALSE, prob = IS_obj$normWeights
+  )]
+
+  for (insim in 1:nsim) {
+    for (t in 1:T) {
+
+      if (t == 1) {
+        mu = (theta1 * sigmaSq + (1 + b) * (Z[2] - a) * theta2) / (
+          sigmaSq + (1 + b)^2 * theta2
+        )
+        tauSq = sigmaSq * theta2 / (sigmaSq + (1 + b)^2 * theta2)
+      } else if (t == T) {
+        mu = a + (1 + b) * Z[T - 1]
+        tauSq = sigmaSq
+      } else {
+        mu = (a + (1 + b) * (Z[t + 1] + Z[t - 1] - a)) / (1 + (1 + b)^2)
+        tauSq = sigmaSq / (1 + (1 + b)^2)
+      }
+
+      xi = Nstar[t] * tauSq + mu - lambertW_expArg(
+        log(tauSq) + Nstar[t] * tauSq + mu
+      )
+
+      logC = -exp(xi) + xi * Nstar[t] - 0.5 / tauSq * (xi - mu)^2
+
+      while (TRUE) {
+        x = xi + sqrt(tauSq) * rnorm(100)
+        check = -rexp(100) <= -exp(x) + x * Nstar[t] -
+          0.5 / tauSq * (x - mu)^2 +
+          0.5 / tauSq * (x - xi)^2 -
+          logC
+        if (sum(check) > 0) {
+          Z[t] = x[check][1]
+          break
+        }
+      }
+
+    }
+    mcmc_sample[, insim] = Z
+  }
+
+  return(mcmc_sample)
+}
 ################################################################################

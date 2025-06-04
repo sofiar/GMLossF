@@ -8,7 +8,7 @@
 
 #' @usage
 #' GompPois_flatNIG_mcmc = function(nsim, Nstar, phi1, phi2, eta1, eta2,
-#'                                  starter = NULL, burn = 1, thin = 1,
+#'                                  starter = NULL, burn = 0, thin = 1,
 #'                                  verbose = +Inf, lastZ = FALSE)
 
 #' @details
@@ -96,21 +96,8 @@
 #' @export
 GompPois_flatNIG_mcmc = function(
   nsim, Nstar, phi1, phi2, eta1, eta2, starter = NULL,
-  burn = 1, thin = 1, verbose = +Inf, lastZ = FALSE
+  burn = 0, thin = 1, verbose = +Inf, lastZ = FALSE
 ) {
-
-  #--------------
-  sub_Gomp_loglike_b = function(b, Z, theta1, theta2) {
-    res = 0
-    for (t in 2:T) {
-      res = res + dnorm(
-        Z[t], mean = -b * theta1 + (1 + b) * Z[t - 1],
-        sd = sqrt(-b * (2 + b) * theta2), log = TRUE
-      )
-    }
-    return(res)
-  }
-  #--------------
 
   ### print start time if required
   if (!is.infinite(verbose)) {
@@ -155,16 +142,13 @@ GompPois_flatNIG_mcmc = function(
 
   a = -b * theta1
   sigmaSq = -b * (2 + b) * theta2
-  beta = log(-b / (2 + b))
-  V = pi^2 / 3 # just for initialization, it is not used
 
-
+  ### discrete prior for b (to get starting point for optimizer)
+  b_space = c(1:199) / 100 - 2
+  b_weights = double(length = length(b_space))
 
   ### sample size
   T = length(Nstar)
-
-  ### initialize inverse of B
-  invB = matrix(0, nrow = T, ncol = T)
 
   ### storing vectors
   keep_theta1 = double(nsim)
@@ -181,16 +165,6 @@ GompPois_flatNIG_mcmc = function(
 
     ##### iterate up to thinning value
     while (ithin < thin) {
-
-      ##########################################################################
-      #                                                                        #
-      #                                update V                                #
-      #                                                                        #
-      ##########################################################################
-
-      V = c(rpostlogiskolmo(1, x = beta)) #/ sqrt(c)))
-
-
 
       ##########################################################################
       #                                                                        #
@@ -237,68 +211,87 @@ GompPois_flatNIG_mcmc = function(
 
       ##########################################################################
       #                                                                        #
-      #                                update b                                #
+      #                      update b, theta1, and theta2                      #
       #                                                                        #
       ##########################################################################
 
-      strike = sub_Gomp_loglike_b(b, Z = Z, theta1 = theta1, theta2 = theta2) -
-        rexp(1)
-      delta = runif(1, min = 0, max = 2 * pi)
-      delta_min = delta - 2 * pi
-      delta_max = delta
-      betaTilde = sqrt(V) * rnorm(1) #sqrt(c * V) * rnorm(1)
+      ##### update b
 
+      ### compute un-normalized log-probabilities
+      b_weights = logt_kernel_b(
+        w = Z - eta1, b = b_space, eta2 = eta2, phi1 = phi1, phi2 = phi2, T = T
+      )
+
+      ### get maximum starting from max of weights
+      log_M = -optim(
+        par = b_space[b_weights == max(b_weights)][1],
+        fn = function(x) {
+          -logt_kernel_b(
+            w = Z - eta1, b = x, eta2 = eta2, phi1 = phi1, phi2 = phi2, T = T
+          )
+        },
+        method = "L-BFGS-B", lower = -1.999, upper = -0.001
+      )$value
+
+      ### acceptance-rejection using the prior as proposal
       while (TRUE) {
-        betaProp = beta * cos(delta) + betaTilde * sin(delta)
-        bProp = -2 / (1 + exp(-betaProp))
-        loglike_bProp = sub_Gomp_loglike_b(
-          bProp, Z = Z, theta1 = theta1, theta2 = theta2
-        )
-        if (loglike_bProp >= strike) {
-          beta = betaProp
-          b = bProp
+        x = runif(n = 100, min = -2, max = 0)
+        log_ratio = logt_kernel_b(
+          w = Z - eta1, b = x, eta2 = eta2, phi1 = phi1, phi2 = phi2, T = T
+        ) - log_M
+        if (any(log_ratio > 0)) log_M = max(log_ratio)
+        check = -rexp(100) <= log_ratio
+        if (sum(check) > 0) {
+          b = x[check][1]
           break
-        } else {
-          if (delta < 0) delta_min = delta else delta_max = delta
-          delta = runif(1, min = delta_min, max = delta_max)
         }
       }
 
 
 
-      ##########################################################################
-      #                                                                        #
-      #                        update theta1 and theta2                        #
-      #                                                                        #
-      ##########################################################################
+      ##### update theta2
 
-      invB[1, 1] = 1
-      invB[1, 2] = -(1 + b)
-      invB[2, 1] = -(1 + b)
-      invB[T, T] = 1
-      for (t in 2:(T - 1)) {
-        invB[t, t] = 1 + (1 + b)^2
-        invB[t, t + 1] = -(1 + b)
-        invB[t + 1, t] = -(1 + b)
-      }
-      invB = invB / (1 - (1 + b)^2)
+      ### compute residuals of Z from the prior mean eta1
+      z = Z - eta1
 
-      commonFactor = 1 + eta2 * sum(invB) # sum(invB) is 1'_T %*% B^-1 %*% 1_T
-      rowSums_invB = c(rowSums(invB)) # it is B^-1 %*% 1_T
-      #matrixQuadForm_theta2 = invB - eta2 * tcrossprod(rowSums_invB) /
-      #  commonFactor
+      ### compute 1 + eta2 * 1'_T %*% B^-1 %*% 1_T
+      one_p_eta2_suminvB = (
+        (1 + b)^2 * (eta2 * (T - 2) - 1) - 2 * (1 + b) * eta2 * (T - 1) +
+          eta2 * T + 1
+      ) / (1 - (1 + b)^2)
 
+      ### compute (Z - eta1 * 1_T)' %*% invB %*% (Z - eta1 * 1_T)
+      quad_form_z = (
+        (1 + b)^2 * sum(z[-c(1, T)]^2) - 2 * (1 + b) * sum(z[-T] * z[-1]) +
+          sum(z^2)
+      ) / (1 - (1 + b)^2) - eta2 / one_p_eta2_suminvB *
+        (
+          (1 + b)^2 * sum(z[-c(1, T)])^2 - 2 * (1 + b) * sum(z[-c(1, T)]) *
+            sum(z) + sum(z)^2
+        ) / (2 + b)^2
+
+      ### sample new value of theta2
       theta2 = 1 / rgamma(
-        1, shape = phi1 + 0.5 * T, rate = phi2 + 0.5 * quad_form(
-          invB - eta2 * tcrossprod(rowSums_invB) / commonFactor, Z - eta1
-        )
+        1, shape = phi1 + 0.5 * T, rate = phi2 + 0.5 * quad_form_z
       )
 
+
+
+      ##### update theta1
+
+      ### compute 1'_T %*% invB %*% Z
+      rowsumsInvB_Z = (sum(Z) - (1 + b) * sum(Z[-c(1, T)])) /
+        (2 + b)
+
+      ### sample new value of theta1
       theta1 = rnorm(
-        1, mean = (eta1 + eta2 * crossprod(rowSums_invB, Z)) / commonFactor,
-        sd = sqrt(eta2 * theta2 / commonFactor)
+        1, mean = (eta2 * rowsumsInvB_Z + eta1) / one_p_eta2_suminvB,
+        sd = sqrt(eta2 * theta2 / one_p_eta2_suminvB)
       )
 
+
+
+      ### get values of alternative parametrization
       a = -b * theta1
       sigmaSq = -b * (2 + b) * theta2
 
