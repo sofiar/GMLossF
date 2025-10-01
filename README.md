@@ -16,17 +16,17 @@ This repository serves two main purposes: it contains the `gse` library for appl
 * `Simulation_studies`: Script to run the simulation analysis presented in the paper 
 
 
-### **gse**
+## Overview of the `gse` library 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 
-#### **Installation**
+### **Installation**
 
 ```r
 devtools::install_github("sofiar/GMLossF/gse")
 ```
 
-#### **Quick Start**
+### **Quick Start**
 ```r
 library(gse)
 
