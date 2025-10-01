@@ -1,22 +1,32 @@
-## Gompertz Model with observation Error 
+# Gompertz Model with observation Error 
 
-
-#### Description 
+## Context 
 Stochastic population dynamics models are a crucial component of applied and theoretical ecology. Statistical inference for these models can be challenging, especially when both process error and sampling error are present. Ignoring sampling variability can lead to biased estimations and erroneous conclusions about system behavior. The Gompertz model is widely used to describe the growth of animals, plants, or cells, and it can be adapted to account for sampling variability.
 
 This project aims to develop an inference method for estimating the parameters of the model when sampling error follows a Poisson distribution.
 
-### **Table of Contents**
+## Description
+
+This repository serves two main purposes: it contains the `gse` library for applying the methods described in the manuscript *Likelihood-based inference for the Gompertz model with Poisson errors*, as well as the code to reproduce all analyses presented there. 
+
+
+## Contents 
+* `gse`: R library. 
+* `Real_data`: Scripts to analyze the American Redstart counts dataset.
+* `Simulation_studies`: Script to run the simulation analysis presented in the paper 
+
+
+### **gse**
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 
-### **Installation**
+#### **Installation**
 
 ```r
 devtools::install_github("sofiar/GMLossF/gse")
 ```
 
-### **Quick Start**
+#### **Quick Start**
 ```r
 library(gse)
 
