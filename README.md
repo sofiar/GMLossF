@@ -11,9 +11,9 @@ This repository serves two main purposes: it contains the `gse` library for appl
 
 
 ## Contents 
-* `gse`: R library. 
-* `Real_data`: Scripts to analyze the American Redstart counts dataset.
-* `Simulation_studies`: Script to run the simulation analysis presented in the paper 
+* 📁 `gse`: R library. 
+* 📁 `Real_data`: Scripts to analyze the American Redstart counts dataset.
+* 📁 `Simulation_studies`: Script to run the simulation analysis presented in the paper 
 
 
 ## Overview of the `gse` library 
