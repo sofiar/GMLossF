@@ -141,11 +141,8 @@ GompPois_discrFlatNIG_mcmc = function(
   theta2 = starter$theta2
   b = starter$b
   Z = starter$Z
-
-  a = -b * theta1
-  sigmaSq = -b * (2 + b) * theta2
-
-
+  
+  
 
   ### discrete prior for b
   b_space = c(1:199) / 100 - 2
@@ -177,46 +174,10 @@ GompPois_discrFlatNIG_mcmc = function(
       #                                update Z                                #
       #                                                                        #
       ##########################################################################
-
-      ### get values of alternative parametrization
-      a = -b * theta1
-      sigmaSq = -b * (2 + b) * theta2
-
-      ### sample sequentially new values of Z
-      for (t in 1:T) {
-
-        if (t == 1) {
-          mu = (theta1 * sigmaSq + (1 + b) * (Z[2] - a) * theta2) / (
-            sigmaSq + (1 + b)^2 * theta2
-          )
-          tauSq = sigmaSq * theta2 / (sigmaSq + (1 + b)^2 * theta2)
-        } else if (t == T) {
-          mu = a + (1 + b) * Z[T - 1]
-          tauSq = sigmaSq
-        } else {
-          mu = (a + (1 + b) * (Z[t + 1] + Z[t - 1] - a)) / (1 + (1 + b)^2)
-          tauSq = sigmaSq / (1 + (1 + b)^2)
-        }
-
-        xi = Nstar[t] * tauSq + mu - lambertW_expArg(
-          log(tauSq) + Nstar[t] * tauSq + mu
-        )
-
-        logC = -exp(xi) + xi * Nstar[t] - 0.5 / tauSq * (xi - mu)^2
-
-        while (TRUE) {
-          x = xi + sqrt(tauSq) * rnorm(100)
-          check = -rexp(100) <= -exp(x) + x * Nstar[t] -
-            0.5 / tauSq * (x - mu)^2 +
-            0.5 / tauSq * (x - xi)^2 -
-            logC
-          if (sum(check) > 0) {
-            Z[t] = x[check][1]
-            break
-          }
-        }
-
-      }
+      
+      Z = update_Z_cpp(
+        Nstar, theta1, theta2, b, Z, ntrialAR = 1
+      )
 
 
 

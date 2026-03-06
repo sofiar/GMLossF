@@ -110,12 +110,30 @@ GompPois_mcmcEM = function(
   while (TRUE) {
 
     ##### Expectation step
+    
+    ### initialize storing matrix
+    sample_z = matrix(nrow = T, ncol = nsim)
+    
+    ### sample starting point from importance density
+    IS_obj = c(GompPois_likelihood(
+      Nstar, theta1 = theta1, theta2 = theta2, b = b,
+      nsim = 1e+4, log = TRUE, details = TRUE
+    ))
+    sample_z[, 1] = IS_obj$Z[, sample(
+      c(1:1e+4), size = 1, replace = FALSE, prob = IS_obj$normWeights
+    )]
+    
+    ### do first iteration
+    sample_z[, 1] = update_Z_cpp(
+      Nstar, theta1, theta2, b, sample_z[, 1], ntrialAR = 1
+    )
 
     ### run mcmc for sampling Z
-    sample_z = GompPois_mcmc_Z(
-      nsim = nsim, T = T, Nstar = Nstar,
-      theta1 = theta1, theta2 = theta2, b = b
-    )
+    for (i in 2:nsim) {
+      sample_z[, i] = update_Z_cpp(
+        Nstar, theta1, theta2, b, sample_z[, i - 1], ntrialAR = 1
+      )
+    }
 
 
 

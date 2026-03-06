@@ -37,7 +37,7 @@ maxit_em = 1e+3
 
 
 
-################## Real Data Analysis #####################
+############################# Real Data Analysis ##############################
 
 ### maximum likelihood estimator
 time = Sys.time()
@@ -51,11 +51,12 @@ time_mle = difftime(Sys.time(), time, units = "secs")
 time = Sys.time()
 res_Gibbs = gse::GompPois_flatNIG_mcmc(
   nsim, Nstar = AmericanRedstart2$redstart,
-  phi1 = 0.01, phi2 = 0.01, eta1 = 0, eta2 = 100, verbose = 1e+3
+  phi1 = 0.01, phi2 = 0.01, eta1 = 0, eta2 = 100
 )
 time_Gibbs = difftime(Sys.time(), time, units = "secs")
 
 ### Bayesian approach (stan)
+time = Sys.time()
 object_stan = rstan::sampling(
   object = stan_model, data = list(
     M = length(AmericanRedstart2$redstart), Nstar = AmericanRedstart2$redstart
@@ -63,7 +64,6 @@ object_stan = rstan::sampling(
   chain = 1, cores = 1, iter = nsim + 1e+3, warmup = 1e+3,
   show_messages = FALSE, refresh = 0
 )
-time_stan = rstan::get_elapsed_time(object_stan)
 sample_stan = rstan::extract(object_stan, permuted = FALSE)
 res_stan = matrix(
   nrow = 3, ncol = nsim, dimnames = list(c("theta1", "theta2", "b"))
@@ -71,6 +71,7 @@ res_stan = matrix(
 res_stan[1, ] = sample_stan[, 1, "theta1"]
 res_stan[2, ] = sample_stan[, 1, "theta2"]
 res_stan[3, ] = sample_stan[, 1, "b"]
+time_stan = difftime(Sys.time(), time, units = "secs")
 
 
 

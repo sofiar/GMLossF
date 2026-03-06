@@ -341,43 +341,156 @@ GompPois_mcmc_Z = function(nsim, T, Nstar, theta1, theta2, b) {
   Z = IS_obj$Z[, sample(
     c(1:1e+4), size = 1, replace = FALSE, prob = IS_obj$normWeights
   )]
+  
+  ### odd and even indexes
+  oddInd = c(1:T)[rep(x = c(TRUE, FALSE), times = floor(0.5 * T))]
+  evenInd = c(1:T)[-oddInd]
+  
+  ### length of indexes
+  len_oddInd = length(oddInd)
+  len_evenInd = length(evenInd)
+  
+  ### check if sample size is an even number
+  isT_even = T %% 2 == 0
+  
+  ### split data between odd and even indexes
+  Nstar_odd = Nstar[oddInd]
+  Nstar_even = Nstar[evenInd]
+  
+  ### split between odd and even indexes
+  Z_odd = Z[oddInd]
+  Z_even = Z[evenInd]
+  
+  ### split accep-rej algorithm parameters between odd and even indexes
+  mu_odd = double(length = len_oddInd)
+  mu_even = double(length = len_evenInd)
+  tauSq_odd = double(length = len_oddInd)
+  tauSq_even = double(length = len_evenInd)
+  xi_odd = double(length = len_oddInd)
+  xi_even = double(length = len_evenInd)
+  logC_odd = double(length = len_oddInd)
+  logC_even = double(length = len_evenInd)
 
+  ### number of trials in a single attempt in accep-rej algorithm
+  ntrialAR = 10
+  
   for (insim in 1:nsim) {
-    for (t in 1:T) {
-
-      if (t == 1) {
-        mu = (theta1 * sigmaSq + (1 + b) * (Z[2] - a) * theta2) / (
-          sigmaSq + (1 + b)^2 * theta2
-        )
-        tauSq = sigmaSq * theta2 / (sigmaSq + (1 + b)^2 * theta2)
-      } else if (t == T) {
-        mu = a + (1 + b) * Z[T - 1]
-        tauSq = sigmaSq
-      } else {
-        mu = (a + (1 + b) * (Z[t + 1] + Z[t - 1] - a)) / (1 + (1 + b)^2)
-        tauSq = sigmaSq / (1 + (1 + b)^2)
-      }
-
-      xi = Nstar[t] * tauSq + mu - lambertW_expArg(
-        log(tauSq) + Nstar[t] * tauSq + mu
+    ##### odd indexes
+      
+    toDo_odd = rep(x = TRUE, times = len_oddInd)
+    
+    mu_odd[1] = (theta1 * sigmaSq + (1 + b) * (Z_even[1] - a) * theta2) / (
+      sigmaSq + (1 + b)^2 * theta2
+    )
+    tauSq_odd[1] = sigmaSq * theta2 / (sigmaSq + (1 + b)^2 * theta2)
+    
+    if (isT_even) {
+      mu_odd[-1] = (a + (1 + b) * (Z_even[-len_evenInd] + Z_even[-1] - a)) /
+        (1 + (1 + b)^2)
+      tauSq_odd[-1] = sigmaSq / (1 + (1 + b)^2)
+    } else {
+      mu_odd[-1] = c(
+        (a + (1 + b) * (Z_even[-len_evenInd] + Z_even[-1] - a)) /
+          (1 + (1 + b)^2),
+        a + (1 + b) * Z_even[len_evenInd]
       )
-
-      logC = -exp(xi) + xi * Nstar[t] - 0.5 / tauSq * (xi - mu)^2
-
-      while (TRUE) {
-        x = xi + sqrt(tauSq) * rnorm(100)
-        check = -rexp(100) <= -exp(x) + x * Nstar[t] -
-          0.5 / tauSq * (x - mu)^2 +
-          0.5 / tauSq * (x - xi)^2 -
-          logC
-        if (sum(check) > 0) {
-          Z[t] = x[check][1]
-          break
-        }
-      }
-
+      tauSq_odd[-1] = c(
+        rep(x = sigmaSq / (1 + (1 + b)^2), times = len_oddInd - 2),
+        sigmaSq
+      )
     }
-    mcmc_sample[, insim] = Z
+      
+    xi_odd = Nstar_odd * tauSq_odd + mu_odd - lambertW_expArg(
+      log(tauSq_odd) + Nstar_odd * tauSq_odd + mu_odd
+    )
+    
+    logC_odd = -exp(xi_odd) + xi_odd * Nstar_odd -
+      0.5 / tauSq_odd * (xi_odd - mu_odd)^2
+      
+    while (any(toDo_odd)) {
+      x_odd = xi_odd[toDo_odd] + sqrt(tauSq_odd[toDo_odd]) * matrix(
+        rnorm(sum(toDo_odd) * ntrialAR),
+        nrow = sum(toDo_odd), ncol = ntrialAR
+      )
+      check_odd = matrix(
+        -rexp(sum(toDo_odd) * ntrialAR) <=
+          -exp(x_odd) + x_odd * Nstar_odd[toDo_odd] -
+            0.5 / tauSq_odd[toDo_odd] * (
+              (x_odd - mu_odd[toDo_odd])^2 - (x_odd - xi_odd[toDo_odd])^2
+            ) - logC_odd[toDo_odd],
+        nrow = sum(toDo_odd), ncol = ntrialAR
+      )
+      check_odd_row = rowSums(check_odd) > 0
+      if (any(check_odd_row)) {
+        Z_odd[toDo_odd][check_odd_row] = x_odd[cbind(
+          which(check_odd_row),
+          max.col(
+            check_odd[check_odd_row, , drop = FALSE], ties.method = "first"
+          )
+        )]
+        toDo_odd[toDo_odd][check_odd_row] = FALSE
+      }
+    }
+      
+      
+      
+    ##### even indexes
+    toDo_even = rep(x = TRUE, times = len_evenInd)
+    
+    if (isT_even) {
+      mu_even = c(
+        (a + (1 + b) * (Z_odd[-len_oddInd] + Z_odd[-1] - a)) /
+          (1 + (1 + b)^2),
+        a + (1 + b) * Z_odd[len_oddInd]
+      )
+      tauSq_even = c(
+        rep(x = sigmaSq / (1 + (1 + b)^2), times = len_evenInd - 1),
+        sigmaSq
+      )
+    } else {
+      mu_even = (a + (1 + b) * (Z_odd[-len_oddInd] + Z_odd[-1] - a)) /
+        (1 + (1 + b)^2)
+      tauSq_even = rep(x = sigmaSq / (1 + (1 + b)^2), times = len_evenInd)
+    }
+    
+    xi_even = Nstar_even * tauSq_even + mu_even - lambertW_expArg(
+      log(tauSq_even) + Nstar_even * tauSq_even + mu_even
+    )
+    
+    logC_even = -exp(xi_even) + xi_even * Nstar_even -
+      0.5 / tauSq_even * (xi_even - mu_even)^2
+      
+    while (any(toDo_even)) {
+      x_even = xi_even[toDo_even] + sqrt(tauSq_even[toDo_even]) * matrix(
+        rnorm(sum(toDo_even) * ntrialAR),
+        nrow = sum(toDo_even), ncol = ntrialAR
+      )
+      check_even = matrix(
+        -rexp(sum(toDo_even) * ntrialAR) <=
+          -exp(x_even) + x_even * Nstar_even[toDo_even] -
+            0.5 / tauSq_even[toDo_even] * (
+              (x_even - mu_even[toDo_even])^2 -
+                (x_even - xi_even[toDo_even])^2
+            ) - logC_even[toDo_even],
+        nrow = sum(toDo_even), ncol = ntrialAR
+      )
+      check_even_row = rowSums(check_even) > 0
+      if (any(check_even_row)) {
+        Z_even[toDo_even][check_even_row] = x_even[cbind(
+          which(check_even_row),
+          max.col(
+            check_even[check_even_row, , drop = FALSE], ties.method = "first"
+          )
+        )]
+        toDo_even[toDo_even][check_even_row] = FALSE
+      }
+    }
+      
+      
+      
+    ### merge Z_odd and Z_even into Z
+    mcmc_sample[oddInd, insim] = Z_odd
+    mcmc_sample[evenInd, insim] = Z_even
   }
 
   return(mcmc_sample)

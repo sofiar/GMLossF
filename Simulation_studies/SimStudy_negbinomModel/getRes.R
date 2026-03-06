@@ -90,23 +90,77 @@
   }
 }
 
+
 theta_case1
 theta_case2
 
-get_mse("case1")
-get_mse("case2")
 
-get_bias("case1")
-get_bias("case2")
+# negbinom_mse_T30_case1 = get_mse("case1")
+# negbinom_bias_T30_case1 = get_bias("case1")
+# negbinom_coverage_T30_case1 = get_coverage("case1")
+# negbinom_times_T30_case1 = get_times("case1")
+# negbinom_eff_T30_case1 = get_eff("case1")
+# negbinom_effps_T30_case1 = get_effps("case1")
 
-get_coverage("case1")
-get_coverage("case2")
+# negbinom_mse_T30_case2 = get_mse("case2")
+# negbinom_bias_T30_case2 = get_bias("case2")
+# negbinom_coverage_T30_case2 = get_coverage("case2")
+# negbinom_times_T30_case2 = get_times("case2")
+# negbinom_eff_T30_case2 = get_eff("case2")
+# negbinom_effps_T30_case2 = get_effps("case2")
 
-get_times("case1")
-get_times("case2")
 
-get_eff("case1")
-get_eff("case2")
+# negbinom_mse_T100_case1 = get_mse("case1")
+# negbinom_bias_T100_case1 = get_bias("case1")
+# negbinom_coverage_T100_case1 = get_coverage("case1")
+# negbinom_times_T100_case1 = get_times("case1")
+# negbinom_eff_T100_case1 = get_eff("case1")
+# negbinom_effps_T100_case1 = get_effps("case1")
 
-get_effps("case1")
-get_effps("case2")
+# negbinom_mse_T100_case2 = get_mse("case2")
+# negbinom_bias_T100_case2 = get_bias("case2")
+# negbinom_coverage_T100_case2 = get_coverage("case2")
+# negbinom_times_T100_case2 = get_times("case2")
+# negbinom_eff_T100_case2 = get_eff("case2")
+# negbinom_effps_T100_case2 = get_effps("case2")
+
+# save(list = ls(), file = "negbinom_getRes.RData")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+load("negbinom_getRes.RData")
+
+negbinom_mse_T30_case1
+negbinom_mse_T100_case1
+
+negbinom_bias_T30_case1
+negbinom_bias_T100_case1
+
+negbinom_coverage_T30_case1
+negbinom_coverage_T100_case1
+
+negbinom_times_T30_case1
+negbinom_times_T100_case1
+
+negbinom_eff_T30_case1
+negbinom_eff_T100_case1
+
+negbinom_effps_T30_case1
+negbinom_effps_T100_case1
+
+
+negbinom_mse_T30_case2
+negbinom_mse_T100_case2
+
+negbinom_bias_T30_case2
+negbinom_bias_T100_case2
+
+negbinom_coverage_T30_case2
+negbinom_coverage_T100_case2
+
+negbinom_times_T30_case2
+negbinom_times_T100_case2
+
+negbinom_eff_T30_case2
+negbinom_eff_T100_case2
+
+negbinom_effps_T30_case2
+negbinom_effps_T100_case2

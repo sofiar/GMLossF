@@ -139,13 +139,12 @@ GompPois_flatNIG_mcmc = function(
   theta2 = starter$theta2
   b = starter$b
   Z = starter$Z
-
-  a = -b * theta1
-  sigmaSq = -b * (2 + b) * theta2
+  
+  
 
   ### discrete prior for b (to get starting point for optimizer)
   b_space = c(1:199) / 100 - 2
-  b_weights = double(length = length(b_space))
+  #b_weights = double(length = length(b_space))
 
   ### sample size
   T = length(Nstar)
@@ -159,178 +158,22 @@ GompPois_flatNIG_mcmc = function(
 
 
   ########## draw the chain
-  for (insim in (1 - burn):nsim) {
+  result <- mcmc_loop_cpp(
+    burn, nsim, thin, verbose,
+    Nstar, T, b_space,
+    eta1, eta2, phi1, phi2,
+    theta1, theta2, b, Z,
+    update_Z_cpp, update_pars_cpp
+  )
 
-    ithin = 0
-
-    ##### iterate up to thinning value
-    while (ithin < thin) {
-
-      ##########################################################################
-      #                                                                        #
-      #                                update Z                                #
-      #                                                                        #
-      ##########################################################################
-
-      for (t in 1:T) {
-
-        if (t == 1) {
-          mu = (theta1 * sigmaSq + (1 + b) * (Z[2] - a) * theta2) / (
-            sigmaSq + (1 + b)^2 * theta2
-          )
-          tauSq = sigmaSq * theta2 / (sigmaSq + (1 + b)^2 * theta2)
-        } else if (t == T) {
-          mu = a + (1 + b) * Z[T - 1]
-          tauSq = sigmaSq
-        } else {
-          mu = (a + (1 + b) * (Z[t + 1] + Z[t - 1] - a)) / (1 + (1 + b)^2)
-          tauSq = sigmaSq / (1 + (1 + b)^2)
-        }
-
-        xi = Nstar[t] * tauSq + mu - lambertW_expArg(
-          log(tauSq) + Nstar[t] * tauSq + mu
-        )
-
-        logC = -exp(xi) + xi * Nstar[t] - 0.5 / tauSq * (xi - mu)^2
-
-        while (TRUE) {
-          x = xi + sqrt(tauSq) * rnorm(100)
-          check = -rexp(100) <= -exp(x) + x * Nstar[t] -
-            0.5 / tauSq * (x - mu)^2 +
-            0.5 / tauSq * (x - xi)^2 -
-            logC
-          if (sum(check) > 0) {
-            Z[t] = x[check][1]
-            break
-          }
-        }
-
-      }
-
-
-
-      ##########################################################################
-      #                                                                        #
-      #                      update b, theta1, and theta2                      #
-      #                                                                        #
-      ##########################################################################
-
-      ##### update b
-
-      ### compute un-normalized log-probabilities
-      b_weights = logt_kernel_b(
-        w = Z - eta1, b = b_space, eta2 = eta2, phi1 = phi1, phi2 = phi2, T = T
-      )
-
-      ### get maximum starting from max of weights
-      log_M = -optim(
-        par = b_space[b_weights == max(b_weights)][1],
-        fn = function(x) {
-          -logt_kernel_b(
-            w = Z - eta1, b = x, eta2 = eta2, phi1 = phi1, phi2 = phi2, T = T
-          )
-        },
-        method = "L-BFGS-B", lower = -1.999, upper = -0.001
-      )$value
-
-      ### acceptance-rejection using the prior as proposal
-      while (TRUE) {
-        x = runif(n = 100, min = -2, max = 0)
-        log_ratio = logt_kernel_b(
-          w = Z - eta1, b = x, eta2 = eta2, phi1 = phi1, phi2 = phi2, T = T
-        ) - log_M
-        if (any(log_ratio > 0)) log_M = max(log_ratio)
-        check = -rexp(100) <= log_ratio
-        if (sum(check) > 0) {
-          b = x[check][1]
-          break
-        }
-      }
-
-
-
-      ##### update theta2
-
-      ### compute residuals of Z from the prior mean eta1
-      z = Z - eta1
-
-      ### compute 1 + eta2 * 1'_T %*% B^-1 %*% 1_T
-      one_p_eta2_suminvB = (
-        (1 + b)^2 * (eta2 * (T - 2) - 1) - 2 * (1 + b) * eta2 * (T - 1) +
-          eta2 * T + 1
-      ) / (1 - (1 + b)^2)
-
-      ### compute (Z - eta1 * 1_T)' %*% invB %*% (Z - eta1 * 1_T)
-      quad_form_z = (
-        (1 + b)^2 * sum(z[-c(1, T)]^2) - 2 * (1 + b) * sum(z[-T] * z[-1]) +
-          sum(z^2)
-      ) / (1 - (1 + b)^2) - eta2 / one_p_eta2_suminvB *
-        (
-          (1 + b)^2 * sum(z[-c(1, T)])^2 - 2 * (1 + b) * sum(z[-c(1, T)]) *
-            sum(z) + sum(z)^2
-        ) / (2 + b)^2
-
-      ### sample new value of theta2
-      theta2 = 1 / rgamma(
-        1, shape = phi1 + 0.5 * T, rate = phi2 + 0.5 * quad_form_z
-      )
-
-
-
-      ##### update theta1
-
-      ### compute 1'_T %*% invB %*% Z
-      rowsumsInvB_Z = (sum(Z) - (1 + b) * sum(Z[-c(1, T)])) /
-        (2 + b)
-
-      ### sample new value of theta1
-      theta1 = rnorm(
-        1, mean = (eta2 * rowsumsInvB_Z + eta1) / one_p_eta2_suminvB,
-        sd = sqrt(eta2 * theta2 / one_p_eta2_suminvB)
-      )
-
-
-
-      ### get values of alternative parametrization
-      a = -b * theta1
-      sigmaSq = -b * (2 + b) * theta2
-
-
-
-      ##### end of single complete scan
-      if (insim > 0) ithin = ithin + 1 else ithin = thin
-
-    }
-
-    ### check if outside of burn-in period
-    if (insim > 0) {
-
-      ### keep values
-      keep_b[insim] = b
-      keep_theta1[insim] = theta1
-      keep_theta2[insim] = theta2
-
-      ### print status of the chain
-      if (insim %% verbose == 0) {
-        print(paste(
-          "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
-          sep = ""
-        ))
-      }
-
-    } else {
-
-      ### print status of the chain during burn-in
-      if ((insim + burn) %% verbose == 0) {
-        print(paste(
-          "iteration ", insim, " of ", nsim, " completed at time ", Sys.time(),
-          sep = ""
-        ))
-      }
-
-    }
-
-  }
+  nZ          <- length(Z)
+  keep_b      <- result[1:nsim]
+  keep_theta1 <- result[(nsim + 1):(2 * nsim)]
+  keep_theta2 <- result[(2 * nsim + 1):(3 * nsim)]
+  # b           <- result[3 * nsim + 1]
+  # theta1      <- result[3 * nsim + 2]
+  # theta2      <- result[3 * nsim + 3]
+  Z           <- result[(3 * nsim + 4):(3 * nsim + 3 + nZ)]
 
 
 

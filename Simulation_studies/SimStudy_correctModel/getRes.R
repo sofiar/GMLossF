@@ -90,23 +90,77 @@
   }
 }
 
+
 theta_case1
 theta_case2
 
-get_mse("case1")
-get_mse("case2")
 
-get_bias("case1")
-get_bias("case2")
+# correct_mse_T30_case1 = get_mse("case1")
+# correct_bias_T30_case1 = get_bias("case1")
+# correct_coverage_T30_case1 = get_coverage("case1")
+# correct_times_T30_case1 = get_times("case1")
+# correct_eff_T30_case1 = get_eff("case1")
+# correct_effps_T30_case1 = get_effps("case1")
 
-get_coverage("case1")
-get_coverage("case2")
+# correct_mse_T30_case2 = get_mse("case2")
+# correct_bias_T30_case2 = get_bias("case2")
+# correct_coverage_T30_case2 = get_coverage("case2")
+# correct_times_T30_case2 = get_times("case2")
+# correct_eff_T30_case2 = get_eff("case2")
+# correct_effps_T30_case2 = get_effps("case2")
 
-get_times("case1")
-get_times("case2")
 
-get_eff("case1")
-get_eff("case2")
+# correct_mse_T100_case1 = get_mse("case1")
+# correct_bias_T100_case1 = get_bias("case1")
+# correct_coverage_T100_case1 = get_coverage("case1")
+# correct_times_T100_case1 = get_times("case1")
+# correct_eff_T100_case1 = get_eff("case1")
+# correct_effps_T100_case1 = get_effps("case1")
 
-get_effps("case1")
-get_effps("case2")
+# correct_mse_T100_case2 = get_mse("case2")
+# correct_bias_T100_case2 = get_bias("case2")
+# correct_coverage_T100_case2 = get_coverage("case2")
+# correct_times_T100_case2 = get_times("case2")
+# correct_eff_T100_case2 = get_eff("case2")
+# correct_effps_T100_case2 = get_effps("case2")
+
+# save(list = ls(), file = "correct_getRes.RData")
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+load("correct_getRes.RData")
+
+correct_mse_T30_case1
+correct_mse_T100_case1
+
+correct_bias_T30_case1
+correct_bias_T100_case1
+
+correct_coverage_T30_case1
+correct_coverage_T100_case1
+
+correct_times_T30_case1
+correct_times_T100_case1
+
+correct_eff_T30_case1
+correct_eff_T100_case1
+
+correct_effps_T30_case1
+correct_effps_T100_case1
+
+
+correct_mse_T30_case2
+correct_mse_T100_case2
+
+correct_bias_T30_case2
+correct_bias_T100_case2
+
+correct_coverage_T30_case2
+correct_coverage_T100_case2
+
+correct_times_T30_case2
+correct_times_T100_case2
+
+correct_eff_T30_case2
+correct_eff_T100_case2
+
+correct_effps_T30_case2
+correct_effps_T100_case2

@@ -46,6 +46,7 @@ res_case1 = parallel::clusterApply(
 
       ### Bayesian approach (stan)
       if (toDo) {
+        time = Sys.time()
         object_stan = tryCatch(
           suppressWarnings(suppressMessages(rstan::sampling(
             object = stan_model, data = list(M = length(Nstar), Nstar = Nstar),
@@ -65,6 +66,7 @@ res_case1 = parallel::clusterApply(
           res_stan[1, ] = sample_stan[, 1, "theta1"]
           res_stan[2, ] = sample_stan[, 1, "theta2"]
           res_stan[3, ] = sample_stan[, 1, "b"]
+          time_stan = difftime(Sys.time(), time, units = "secs")
         }
       }
 
@@ -81,7 +83,7 @@ res_case1 = parallel::clusterApply(
     names(compTimes) = c("mle", "Gibbs", "Stan")
     compTimes["mle"] = time_mle
     compTimes["Gibbs"] = time_Gibbs
-    compTimes["Stan"] = sum(time_stan)
+    compTimes["Stan"] = time_stan
 
     ### point estimator
     pointEst = matrix(
@@ -155,7 +157,7 @@ res_case1 = parallel::clusterApply(
 
 
 
-### flag for completion of theta_case1es and start theta_case2
+### flag for completation of theta_case1 and start theta_case2
 parallel::clusterEvalQ(
   cl = cluster, print(
     "Simulation for theta_case1 is completed, start simulation for theta_case2"

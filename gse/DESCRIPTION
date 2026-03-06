@@ -7,10 +7,11 @@ Authors@R:
       person("Radu", "Craiu", role="aut"))
 Description: Implementation of the Gompertz model with sampling error: random number generator and inference under frequentist and Bayesian approaches.
 License: GPL-3
-Imports: lamW, MASS
+Imports: Rcpp, lamW, MASS
+LinkingTo: Rcpp, RcppEigen
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.3
 Depends: 
     R (>= 2.10)
 LazyData: true

@@ -5,24 +5,9 @@ data {
 
 parameters {
   real theta1;
-  real b;
+  real<lower=-2, upper=0> b;
   real<lower=0> theta2;
   vector<lower=0>[M] N;
-}
-
-transformed parameters {
-  vector[M] mu; // Mean vector
-  cov_matrix[M] Sigma; // Covariance matrix
-  
-  mu = rep_vector(theta1, M);
- 
-  // Compute Sigma
-  for (i in 1:M) {
-    for (j in 1:M) {
-      Sigma[i, j] = (theta2) * pow(1 + b, abs(i - j));
-    }
-  }
-  
 }
   
 model {
@@ -32,7 +17,11 @@ model {
   b ~ uniform(-2, 0);
     
   // Likelihood
-  log(N) ~ multi_normal(mu, Sigma);
+  N[1] ~ lognormal(theta1, sqrt(theta2));
+  
+  for (t in 2:M) {
+    N[t] ~ lognormal(-b*theta1 + (1+b)*log(N[t-1]), sqrt(-b*(2+b)*theta2));
+  }
   
   for(i in 1:M){
     Nstar[i] ~ poisson(N[i]);
